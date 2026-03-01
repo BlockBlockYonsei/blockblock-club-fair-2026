@@ -6,11 +6,16 @@ import {
   useSuiClient,
   useSuiClientContext,
 } from '@mysten/dapp-kit';
-import { requestGeneratedImage, requestSponsoredMint } from './api';
+import {
+  type SponsoredMintResponse,
+  requestGeneratedImage,
+  requestSponsoredMint,
+} from './api';
 
 type MintState =
   | { kind: 'idle' }
   | { kind: 'loading'; message: string }
+  | { kind: 'ready'; message: string }
   | { kind: 'success'; digest: string; objectId?: string }
   | { kind: 'error'; message: string };
 
@@ -22,6 +27,9 @@ type ImageState =
 
 function toUserMessage(error: unknown): string {
   const raw = error instanceof Error ? error.message : String(error);
+  if (raw.includes('Failed to open new window')) {
+    return '브라우저 팝업이 차단되었습니다. 사이트 팝업 허용 후 "지갑 서명하고 민팅하기" 버튼을 다시 눌러 주세요.';
+  }
   if (raw.includes('), 3)')) {
     return '민팅 수량이 모두 소진되었습니다.';
   }
@@ -52,10 +60,15 @@ export default function App() {
   );
   const [imageState, setImageState] = useState<ImageState>({ kind: 'idle' });
   const [mintState, setMintState] = useState<MintState>({ kind: 'idle' });
+  const [preparedTx, setPreparedTx] = useState<SponsoredMintResponse | null>(null);
 
-  const canMint = useMemo(() => {
+  const canPrepareMint = useMemo(() => {
     return Boolean(account?.address) && mintState.kind !== 'loading';
   }, [account?.address, mintState.kind]);
+
+  const canSignMint = useMemo(() => {
+    return Boolean(account?.address) && Boolean(preparedTx) && mintState.kind !== 'loading';
+  }, [account?.address, preparedTx, mintState.kind]);
 
   const canGenerateImage = useMemo(() => {
     return compactText(keyword).length > 0 && imageState.kind !== 'loading';
@@ -100,6 +113,7 @@ export default function App() {
     }
 
     try {
+      setPreparedTx(null);
       const normalizedKeyword = compactText(keyword);
       let finalMintName = compactText(mintName);
       let finalMintImageUrl = mintImageUrl.trim();
@@ -123,16 +137,42 @@ export default function App() {
         name: finalMintName || undefined,
         imageUrl: finalMintImageUrl || undefined,
       });
+      setPreparedTx(sponsored);
+      setMintState({
+        kind: 'ready',
+        message: '트랜잭션 준비 완료. 아래 버튼을 눌러 지갑 서명을 진행해 주세요.',
+      });
+    } catch (error) {
+      setMintState({
+        kind: 'error',
+        message: toUserMessage(error),
+      });
+    }
+  };
 
+  const onClickSignAndExecute = async () => {
+    if (!account?.address) {
+      setMintState({ kind: 'error', message: '먼저 Slush 지갑을 연결해 주세요.' });
+      return;
+    }
+    if (!preparedTx) {
+      setMintState({
+        kind: 'error',
+        message: '먼저 "민팅 트랜잭션 준비하기"를 실행해 주세요.',
+      });
+      return;
+    }
+
+    try {
       setMintState({ kind: 'loading', message: '지갑 서명 요청 중...' });
       const signed = await signTransaction({
-        transaction: sponsored.txBytes,
+        transaction: preparedTx.txBytes,
       });
 
       setMintState({ kind: 'loading', message: '체인에 민팅 전송 중...' });
       const result = await client.executeTransactionBlock({
-        transactionBlock: signed.bytes ?? sponsored.txBytes,
-        signature: [signed.signature, sponsored.sponsorSignature],
+        transactionBlock: signed.bytes ?? preparedTx.txBytes,
+        signature: [signed.signature, preparedTx.sponsorSignature],
         options: {
           showEffects: true,
           showObjectChanges: true,
@@ -156,6 +196,7 @@ export default function App() {
         digest: result.digest,
         objectId: createdNft && 'objectId' in createdNft ? createdNft.objectId : undefined,
       });
+      setPreparedTx(null);
     } catch (error) {
       setMintState({
         kind: 'error',
@@ -223,11 +264,15 @@ export default function App() {
         {mintImageUrl && (
           <img className="preview-image" src={mintImageUrl} alt="NFT preview" />
         )}
-        <button onClick={onClickMint} disabled={!canMint}>
-          3) 키워드 이미지 + 가스비 대납으로 민팅하기
+        <button onClick={onClickMint} disabled={!canPrepareMint}>
+          3) 민팅 트랜잭션 준비하기
+        </button>
+        <button onClick={onClickSignAndExecute} disabled={!canSignMint}>
+          4) 지갑 서명하고 민팅하기
         </button>
 
         {mintState.kind === 'loading' && <p>{mintState.message}</p>}
+        {mintState.kind === 'ready' && <p className="helper">{mintState.message}</p>}
         {mintState.kind === 'error' && <p className="error">{mintState.message}</p>}
         {mintState.kind === 'success' && (
           <div className="success">
