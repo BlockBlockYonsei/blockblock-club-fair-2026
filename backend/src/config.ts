@@ -86,7 +86,10 @@ export function getConfig(): AppConfig {
       ? toHttpsUrlIfMissingProtocol(s3PublicBaseUrl).replace(/\/+$/, '')
       : undefined,
     s3ObjectPrefix: s3ObjectPrefix.replace(/^\/+|\/+$/g, ''),
-    allowedOrigins: (process.env.ALLOWED_ORIGINS ?? 'http://localhost:5173')
+    allowedOrigins: (
+      process.env.ALLOWED_ORIGINS ??
+      'http://localhost:5173,https://blockblock-club-fair-2026.onrender.com'
+    )
       .split(',')
       .map((origin) => origin.trim())
       .filter(Boolean),

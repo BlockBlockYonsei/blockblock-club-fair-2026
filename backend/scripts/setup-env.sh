@@ -18,11 +18,11 @@ read -r -p "S3_BUCKET_NAME (optional, Enter to skip): " S3_BUCKET_NAME
 read -r -p "S3_REGION [ap-northeast-2]: " S3_REGION
 read -r -p "S3_PUBLIC_BASE_URL (optional, Enter to skip): " S3_PUBLIC_BASE_URL
 read -r -p "S3_OBJECT_PREFIX [generated]: " S3_OBJECT_PREFIX
-read -r -p "ALLOWED_ORIGINS [http://localhost:5173]: " ALLOWED_ORIGINS
+read -r -p "ALLOWED_ORIGINS [http://localhost:5173,https://blockblock-club-fair-2026.onrender.com]: " ALLOWED_ORIGINS
 read -r -p "TRUST_PROXY [false]: " TRUST_PROXY
 
 if [[ -z "${ALLOWED_ORIGINS}" ]]; then
-  ALLOWED_ORIGINS="http://localhost:5173"
+  ALLOWED_ORIGINS="http://localhost:5173,https://blockblock-club-fair-2026.onrender.com"
 fi
 
 if [[ -z "${TRUST_PROXY}" ]]; then
