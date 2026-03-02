@@ -6,4 +6,7 @@ export default defineConfig({
   server: {
     port: 5173,
   },
+  preview: {
+    allowedHosts: ['blockblock-club-fair-2026.onrender.com'],
+  },
 });
