@@ -1,12 +1,14 @@
 # BlockBlock Sui Booth (Testnet MVP)
 
-Sui Testnet 부스용 웹앱입니다.
+Sui Testnet 부스용 NFT 민팅 웹앱입니다.
 
-기능:
-- Slush 지갑 기반 Web3 로그인(지갑 연결)
-- 키워드 기반 픽셀 코인 PNG 생성
-- NFT 민팅 버튼
-- 가스비 대납(Sponsored Transaction)
+## 기능
+
+- Slush 지갑 기반 Web3 로그인
+- `assets/coin_list`의 13개 동물 코인 중 선택
+- 선택한 동물 코인 이미지로 NFT 민팅
+- Sponsored Transaction(가스비 대납)
+- 이미지 저장소: Supabase Storage(선택)
 
 실행 환경:
 - Node.js 22 이상 (`@mysten/sui` v2 요구사항)
@@ -16,6 +18,7 @@ Sui Testnet 부스용 웹앱입니다.
 - `frontend`: React + Vite + `@mysten/dapp-kit`
 - `backend`: Fastify + Sui SDK (스폰서 트랜잭션 생성)
 - `move`: Sui Move NFT 민팅 모듈
+- `assets/coin_list`: 사전 생성된 동물 코인 PNG 13종
 
 ## 1) Move 배포
 
@@ -44,7 +47,19 @@ sui client call \
 
 결과에서 생성된 `MintConfig` object id를 기록합니다.
 
-## 2) 백엔드 설정
+## 2) Supabase Storage 준비 (선택)
+
+Supabase를 쓰지 않으면 백엔드가 로컬 이미지 라우트(`/api/coin/image/:coinId`)를 직접 서빙합니다.
+Supabase를 쓰면 백엔드가 동물 코인 PNG를 버킷에 업로드하고 public URL을 사용합니다.
+
+1. Supabase 프로젝트 생성
+2. Storage Bucket 생성 (예: `coin-images`)
+3. Bucket을 Public으로 설정
+4. 프로젝트 Settings에서 다음 값 확보
+- `Project URL` (`SUPABASE_URL`)
+- `service_role` key (`SUPABASE_SERVICE_ROLE_KEY`)
+
+## 3) 백엔드 설정
 
 ```bash
 cd backend
@@ -53,17 +68,18 @@ cp .env.example .env
 
 `.env` 필수 값:
 - `CONTRACT_PACKAGE_ID`: Move 배포 패키지 ID
-- `MINT_CONFIG_OBJECT_ID`: create_mint_config로 만든 shared object ID
+- `MINT_CONFIG_OBJECT_ID`: `create_mint_config`로 만든 shared object ID
 - `SPONSOR_PRIVATE_KEY`: 가스비 대납 지갑의 `suiprivkey...` (ED25519)
 
 선택 값:
 - `SUI_RPC_URL`: 기본 testnet fullnode URL
 - `ALLOWED_ORIGINS`: 프론트 도메인 (콤마 구분)
-- `PUBLIC_BASE_URL`: 프록시/CDN 뒤 배포 시 이미지 URL 생성용 공개 베이스 URL
-- `S3_BUCKET_NAME`: 설정 시 키워드 SVG를 S3에 업로드
-- `S3_REGION`: S3 버킷 리전 (또는 `AWS_REGION`)
-- `S3_PUBLIC_BASE_URL`: S3/CloudFront 공개 베이스 URL (미설정 시 S3 기본 URL 사용)
-- `S3_OBJECT_PREFIX`: 업로드 오브젝트 prefix (기본 `generated`)
+- `PUBLIC_BASE_URL`: 프록시/CDN 뒤 배포 시 백엔드 공개 베이스 URL
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_BUCKET_NAME`
+- `SUPABASE_PUBLIC_BASE_URL`: 커스텀 public base URL이 있을 때만 사용
+- `SUPABASE_OBJECT_PREFIX`: 업로드 prefix (기본 `coin-list`)
 - `DEFAULT_NFT_NAME`, `DEFAULT_NFT_IMAGE_URL`
 - `TRUST_PROXY`: 리버스 프록시 뒤 배포 시 `true` 권장
 - `RATE_LIMIT_GLOBAL_PER_MINUTE`: 전역 요청 제한 (기본 300)
@@ -84,7 +100,7 @@ npm run dev
 curl http://localhost:3001/health
 ```
 
-## 3) 프론트 설정
+## 4) 프론트 설정
 
 ```bash
 cd frontend
@@ -103,7 +119,7 @@ npm install
 npm run dev
 ```
 
-## 4) 루트에서 동시 실행
+## 5) 루트에서 동시 실행
 
 ```bash
 npm install
@@ -112,34 +128,29 @@ npm run dev
 
 ## API
 
-### `POST /api/image/generate`
+### `GET /api/coins`
 
-요청:
+민팅 가능한 동물 코인 목록과 이미지 URL을 반환합니다.
 
-```json
-{
-  "keyword": "neon tiger"
-}
-```
-
-응답:
+응답 예시:
 
 ```json
 {
-  "keyword": "neon tiger",
-  "nftName": "neon tiger Booth NFT",
-  "imageUrl": "https://<your-cdn-or-s3>/generated/20260224/...svg"
+  "coins": [
+    {
+      "coinId": "tiger",
+      "displayName": "Tiger",
+      "nftName": "Tiger Coin Booth NFT",
+      "imageUrl": "https://.../tiger.png"
+    }
+  ]
 }
 ```
 
-- `S3_BUCKET_NAME` 설정 시 SVG를 S3에 저장하고 공개 URL을 반환합니다.
-- S3 미설정 시 기존처럼 `/api/image/render?keyword=...` 동적 URL을 반환합니다.
+### `GET /api/coin/image/:coinId`
 
-### `GET /api/image/render?keyword=...`
-
-- `keyword`를 기반으로 픽셀 코인 PNG 이미지를 동적으로 렌더링합니다.
-- 기본 배경은 흰색이며, 코인 베이스/스타일 레퍼런스는 `assets/coin`, `assets/coin_examples`를 사용합니다.
-- `POST /api/image/generate`가 반환한 `imageUrl`로 바로 사용 가능합니다.
+- `coinId`에 해당하는 PNG를 반환합니다.
+- Supabase 미설정 시 프론트 이미지 미리보기에 사용됩니다.
 
 ### `POST /api/sponsor/mint`
 
@@ -148,13 +159,10 @@ npm run dev
 ```json
 {
   "sender": "0x...",
-  "name": "BlockBlock Booth NFT",
-  "imageUrl": "https://...",
-  "keyword": "neon tiger"
+  "animal": "tiger",
+  "name": "Tiger Coin Booth NFT"
 }
 ```
-
-- `keyword`를 보내면 서버가 이미지를 생성해(S3 설정 시 업로드) 해당 URL로 민팅 트랜잭션을 만듭니다.
 
 응답:
 
@@ -175,11 +183,11 @@ npm run dev
 
 ## 배포 권장
 
-- Frontend: Vercel/Netlify
+- Frontend: Render (Static/Web Service 모두 가능)
 - Backend: Render/Fly.io/Railway
 - RPC: 신뢰 가능한 제공자(유료 플랜 권장)
 
 ## 주의
 
-- 스폰서 프라이빗키는 서버에만 보관
+- `SUPABASE_SERVICE_ROLE_KEY`, `SPONSOR_PRIVATE_KEY`는 서버에만 보관
 - 운영 전 `max_supply`와 부스 동선 리허설 필수

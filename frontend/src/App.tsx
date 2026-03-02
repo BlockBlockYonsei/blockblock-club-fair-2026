@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ConnectButton,
   useCurrentAccount,
@@ -7,8 +7,9 @@ import {
   useSuiClientContext,
 } from '@mysten/dapp-kit';
 import {
+  type CoinListItem,
   type SponsoredMintResponse,
-  requestGeneratedImage,
+  requestCoinList,
   requestSponsoredMint,
 } from './api';
 
@@ -19,10 +20,9 @@ type MintState =
   | { kind: 'success'; digest: string; objectId?: string }
   | { kind: 'error'; message: string };
 
-type ImageState =
-  | { kind: 'idle' }
+type CoinState =
   | { kind: 'loading'; message: string }
-  | { kind: 'success'; imageUrl: string }
+  | { kind: 'success' }
   | { kind: 'error'; message: string };
 
 function toUserMessage(error: unknown): string {
@@ -53,56 +53,79 @@ export default function App() {
   const { network: currentNetwork } = useSuiClientContext();
   const { mutateAsync: signTransaction } = useSignTransaction();
 
-  const [keyword, setKeyword] = useState('');
-  const [mintName, setMintName] = useState('BlockBlock Booth NFT');
-  const [mintImageUrl, setMintImageUrl] = useState(
-    'https://placehold.co/1024x1024/png?text=BlockBlock+Booth',
-  );
-  const [imageState, setImageState] = useState<ImageState>({ kind: 'idle' });
+  const [coinOptions, setCoinOptions] = useState<CoinListItem[]>([]);
+  const [coinState, setCoinState] = useState<CoinState>({
+    kind: 'loading',
+    message: '동물 코인 목록을 불러오는 중...',
+  });
+  const [selectedCoinId, setSelectedCoinId] = useState('');
+  const [mintName, setMintName] = useState('');
   const [mintState, setMintState] = useState<MintState>({ kind: 'idle' });
   const [preparedTx, setPreparedTx] = useState<SponsoredMintResponse | null>(null);
 
+  useEffect(() => {
+    let active = true;
+
+    const loadCoins = async () => {
+      try {
+        const loaded = await requestCoinList();
+        if (!active) {
+          return;
+        }
+
+        if (loaded.length === 0) {
+          setCoinOptions([]);
+          setCoinState({ kind: 'error', message: '사용 가능한 동물 코인이 없습니다.' });
+          return;
+        }
+
+        setCoinOptions(loaded);
+        setSelectedCoinId(loaded[0].coinId);
+        setMintName(loaded[0].nftName);
+        setCoinState({ kind: 'success' });
+      } catch (error) {
+        if (!active) {
+          return;
+        }
+        setCoinState({
+          kind: 'error',
+          message: toUserMessage(error),
+        });
+      }
+    };
+
+    loadCoins().catch(() => {
+      // noop: handled in loadCoins
+    });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const selectedCoin = useMemo(() => {
+    return coinOptions.find((item) => item.coinId === selectedCoinId);
+  }, [coinOptions, selectedCoinId]);
+
   const canPrepareMint = useMemo(() => {
-    return Boolean(account?.address) && mintState.kind !== 'loading';
-  }, [account?.address, mintState.kind]);
+    return (
+      Boolean(account?.address) &&
+      coinState.kind === 'success' &&
+      Boolean(selectedCoin) &&
+      mintState.kind !== 'loading'
+    );
+  }, [account?.address, coinState.kind, selectedCoin, mintState.kind]);
 
   const canSignMint = useMemo(() => {
     return Boolean(account?.address) && Boolean(preparedTx) && mintState.kind !== 'loading';
   }, [account?.address, preparedTx, mintState.kind]);
 
-  const canGenerateImage = useMemo(() => {
-    return compactText(keyword).length > 0 && imageState.kind !== 'loading';
-  }, [keyword, imageState.kind]);
-
-  const generateImageFromKeyword = async (rawKeyword: string) => {
-    const normalizedKeyword = compactText(rawKeyword);
-    if (!normalizedKeyword) {
-      throw new Error('키워드를 입력해 주세요.');
-    }
-
-    setImageState({ kind: 'loading', message: '키워드로 이미지 생성 중...' });
-    const generated = await requestGeneratedImage({
-      keyword: normalizedKeyword,
-    });
-    setMintImageUrl(generated.imageUrl);
-    if (!compactText(mintName)) {
-      setMintName(generated.nftName);
-    }
-    setImageState({
-      kind: 'success',
-      imageUrl: generated.imageUrl,
-    });
-    return generated;
-  };
-
-  const onClickGenerateImage = async () => {
-    try {
-      await generateImageFromKeyword(keyword);
-    } catch (error) {
-      setImageState({
-        kind: 'error',
-        message: toUserMessage(error),
-      });
+  const onSelectCoin = (coin: CoinListItem) => {
+    setSelectedCoinId(coin.coinId);
+    setMintName(coin.nftName);
+    setPreparedTx(null);
+    if (mintState.kind !== 'loading') {
+      setMintState({ kind: 'idle' });
     }
   };
 
@@ -112,30 +135,18 @@ export default function App() {
       return;
     }
 
+    if (!selectedCoin) {
+      setMintState({ kind: 'error', message: '민팅할 동물을 먼저 선택해 주세요.' });
+      return;
+    }
+
     try {
       setPreparedTx(null);
-      const normalizedKeyword = compactText(keyword);
-      let finalMintName = compactText(mintName);
-      let finalMintImageUrl = mintImageUrl.trim();
-
-      if (normalizedKeyword) {
-        setMintState({
-          kind: 'loading',
-          message: '키워드 기반 이미지 생성 중...',
-        });
-        const generated = await generateImageFromKeyword(normalizedKeyword);
-        finalMintImageUrl = generated.imageUrl;
-        if (!finalMintName) {
-          finalMintName = generated.nftName;
-          setMintName(generated.nftName);
-        }
-      }
-
       setMintState({ kind: 'loading', message: '가스비 대납 트랜잭션 생성 중...' });
       const sponsored = await requestSponsoredMint({
         sender: account.address,
-        name: finalMintName || undefined,
-        imageUrl: finalMintImageUrl || undefined,
+        animal: selectedCoin.coinId,
+        name: compactText(mintName) || undefined,
       });
       setPreparedTx(sponsored);
       setMintState({
@@ -209,9 +220,9 @@ export default function App() {
     <main className="app-shell">
       <section className="hero">
         <p className="tag">Sui Testnet Booth</p>
-        <h1>Web3 처음이어도 1분 안에 NFT 민팅</h1>
+        <h1>동물 코인 NFT 빠른 민팅</h1>
         <p className="description">
-          Slush 지갑 로그인, NFT 민팅, 가스비 대납까지 한 번에 제공하는 부스용 페이지입니다.
+          동물 코인을 고르고, 스폰서드 트랜잭션으로 바로 NFT를 민팅합니다.
         </p>
         <ConnectButton />
       </section>
@@ -228,24 +239,41 @@ export default function App() {
       </section>
 
       <section className="panel">
-        <h2>2) NFT 민팅</h2>
-        <label>
-          생성 키워드
-          <input
-            value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
-            maxLength={40}
-            placeholder="예: cyber tiger, neon city, hanbok robot"
-          />
-        </label>
-        <button onClick={onClickGenerateImage} disabled={!canGenerateImage}>
-          키워드로 이미지 생성
-        </button>
-        {imageState.kind === 'loading' && <p>{imageState.message}</p>}
-        {imageState.kind === 'error' && <p className="error">{imageState.message}</p>}
-        {imageState.kind === 'success' && (
-          <p className="helper">이미지 생성 완료. 아래 URL로 민팅됩니다.</p>
+        <h2>2) 동물 코인 선택</h2>
+        {coinState.kind === 'loading' && <p>{coinState.message}</p>}
+        {coinState.kind === 'error' && <p className="error">{coinState.message}</p>}
+
+        {coinState.kind === 'success' && (
+          <>
+            <div className="coin-grid">
+              {coinOptions.map((coin) => {
+                const selected = selectedCoinId === coin.coinId;
+                return (
+                  <button
+                    type="button"
+                    key={coin.coinId}
+                    className={`coin-card ${selected ? 'selected' : ''}`}
+                    onClick={() => onSelectCoin(coin)}
+                  >
+                    <img src={coin.imageUrl} alt={coin.displayName} loading="lazy" />
+                    <span className="coin-name">{coin.displayName}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {selectedCoin && (
+              <>
+                <p className="helper">선택된 코인: {selectedCoin.displayName}</p>
+                <img className="preview-image" src={selectedCoin.imageUrl} alt="NFT preview" />
+              </>
+            )}
+          </>
         )}
+      </section>
+
+      <section className="panel">
+        <h2>3) NFT 민팅</h2>
         <label>
           NFT 이름
           <input
@@ -254,22 +282,15 @@ export default function App() {
             maxLength={48}
           />
         </label>
-        <label>
-          NFT 이미지 URL
-          <input
-            value={mintImageUrl}
-            onChange={(event) => setMintImageUrl(event.target.value)}
-          />
-        </label>
-        {mintImageUrl && (
-          <img className="preview-image" src={mintImageUrl} alt="NFT preview" />
-        )}
-        <button onClick={onClickMint} disabled={!canPrepareMint}>
-          3) 민팅 트랜잭션 준비하기
-        </button>
-        <button onClick={onClickSignAndExecute} disabled={!canSignMint}>
-          4) 지갑 서명하고 민팅하기
-        </button>
+
+        <div className="panel-actions">
+          <button onClick={onClickMint} disabled={!canPrepareMint}>
+            민팅 트랜잭션 준비하기
+          </button>
+          <button onClick={onClickSignAndExecute} disabled={!canSignMint}>
+            지갑 서명하고 민팅하기
+          </button>
+        </div>
 
         {mintState.kind === 'loading' && <p>{mintState.message}</p>}
         {mintState.kind === 'ready' && <p className="helper">{mintState.message}</p>}

@@ -14,10 +14,11 @@ read -r -p "MINT_CONFIG_OBJECT_ID (0x...): " MINT_CONFIG_OBJECT_ID
 read -r -s -p "SPONSOR_PRIVATE_KEY (suiprivkey...): " SPONSOR_PRIVATE_KEY
 echo
 read -r -p "PUBLIC_BASE_URL (optional, Enter to skip): " PUBLIC_BASE_URL
-read -r -p "S3_BUCKET_NAME (optional, Enter to skip): " S3_BUCKET_NAME
-read -r -p "S3_REGION [ap-northeast-2]: " S3_REGION
-read -r -p "S3_PUBLIC_BASE_URL (optional, Enter to skip): " S3_PUBLIC_BASE_URL
-read -r -p "S3_OBJECT_PREFIX [generated]: " S3_OBJECT_PREFIX
+read -r -p "SUPABASE_URL (optional, Enter to skip): " SUPABASE_URL
+read -r -p "SUPABASE_SERVICE_ROLE_KEY (optional, Enter to skip): " SUPABASE_SERVICE_ROLE_KEY
+read -r -p "SUPABASE_BUCKET_NAME (optional, Enter to skip): " SUPABASE_BUCKET_NAME
+read -r -p "SUPABASE_PUBLIC_BASE_URL (optional, Enter to skip): " SUPABASE_PUBLIC_BASE_URL
+read -r -p "SUPABASE_OBJECT_PREFIX [coin-list]: " SUPABASE_OBJECT_PREFIX
 read -r -p "ALLOWED_ORIGINS [http://localhost:5173,https://blockblock-club-fair-2026.onrender.com]: " ALLOWED_ORIGINS
 read -r -p "TRUST_PROXY [false]: " TRUST_PROXY
 
@@ -29,12 +30,8 @@ if [[ -z "${TRUST_PROXY}" ]]; then
   TRUST_PROXY="false"
 fi
 
-if [[ -z "${S3_REGION}" ]]; then
-  S3_REGION="ap-northeast-2"
-fi
-
-if [[ -z "${S3_OBJECT_PREFIX}" ]]; then
-  S3_OBJECT_PREFIX="generated"
+if [[ -z "${SUPABASE_OBJECT_PREFIX}" ]]; then
+  SUPABASE_OBJECT_PREFIX="coin-list"
 fi
 
 replace_key() {
@@ -53,10 +50,11 @@ replace_key "CONTRACT_PACKAGE_ID" "${CONTRACT_PACKAGE_ID}"
 replace_key "MINT_CONFIG_OBJECT_ID" "${MINT_CONFIG_OBJECT_ID}"
 replace_key "SPONSOR_PRIVATE_KEY" "${SPONSOR_PRIVATE_KEY}"
 replace_key "PUBLIC_BASE_URL" "${PUBLIC_BASE_URL}"
-replace_key "S3_BUCKET_NAME" "${S3_BUCKET_NAME}"
-replace_key "S3_REGION" "${S3_REGION}"
-replace_key "S3_PUBLIC_BASE_URL" "${S3_PUBLIC_BASE_URL}"
-replace_key "S3_OBJECT_PREFIX" "${S3_OBJECT_PREFIX}"
+replace_key "SUPABASE_URL" "${SUPABASE_URL}"
+replace_key "SUPABASE_SERVICE_ROLE_KEY" "${SUPABASE_SERVICE_ROLE_KEY}"
+replace_key "SUPABASE_BUCKET_NAME" "${SUPABASE_BUCKET_NAME}"
+replace_key "SUPABASE_PUBLIC_BASE_URL" "${SUPABASE_PUBLIC_BASE_URL}"
+replace_key "SUPABASE_OBJECT_PREFIX" "${SUPABASE_OBJECT_PREFIX}"
 replace_key "ALLOWED_ORIGINS" "${ALLOWED_ORIGINS}"
 replace_key "TRUST_PROXY" "${TRUST_PROXY}"
 

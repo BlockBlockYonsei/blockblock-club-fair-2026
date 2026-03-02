@@ -9,12 +9,14 @@ import { Transaction } from '@mysten/sui/transactions';
 import { fromBase64, toBase64 } from '@mysten/sui/utils';
 import { getConfig } from './config.js';
 import { FixedWindowLimiter } from './limiter.js';
-import { S3ImageStore } from './s3.js';
 import {
-  keywordToNftName,
-  normalizeKeyword,
-  renderKeywordCoinPng,
+  coinIdToNftName,
+  listCoinOptions,
+  normalizeCoinId,
+  readCoinImage,
+  type CoinId,
 } from './image.js';
+import { SupabaseImageStore } from './supabase.js';
 
 const addressSchema = z
   .string()
@@ -22,13 +24,12 @@ const addressSchema = z
 
 const mintRequestSchema = z.object({
   sender: addressSchema,
+  animal: z.string().trim().min(1).max(32),
   name: z.string().trim().min(1).max(48).optional(),
-  imageUrl: z.string().trim().url().max(512).optional(),
-  keyword: z.string().trim().min(1).max(40).optional(),
 });
 
-const keywordImageSchema = z.object({
-  keyword: z.string().trim().min(1).max(40),
+const coinIdParamsSchema = z.object({
+  coinId: z.string().trim().min(1).max(32),
 });
 
 const config = getConfig();
@@ -45,13 +46,14 @@ const client = new SuiJsonRpcClient({
 });
 const ipLimiter = new FixedWindowLimiter();
 const senderLimiter = new FixedWindowLimiter();
-const s3ImageStore =
-  config.s3BucketName && config.s3Region
-    ? new S3ImageStore({
-        bucketName: config.s3BucketName,
-        region: config.s3Region,
-        objectPrefix: config.s3ObjectPrefix,
-        publicBaseUrl: config.s3PublicBaseUrl,
+const supabaseImageStore =
+  config.supabaseUrl && config.supabaseServiceRoleKey && config.supabaseBucketName
+    ? new SupabaseImageStore({
+        url: config.supabaseUrl,
+        serviceRoleKey: config.supabaseServiceRoleKey,
+        bucketName: config.supabaseBucketName,
+        objectPrefix: config.supabaseObjectPrefix,
+        publicBaseUrl: config.supabasePublicBaseUrl,
       })
     : null;
 
@@ -109,28 +111,17 @@ async function getGasPayment() {
   ];
 }
 
-async function resolveKeywordImage(keyword: string, request: FastifyRequest) {
-  const png = await renderKeywordCoinPng(keyword);
-  if (s3ImageStore) {
-    const imageUrl = await s3ImageStore.uploadKeywordImage({
-      keyword,
-      content: png,
+async function resolveCoinImageUrl(coinId: CoinId, request: FastifyRequest): Promise<string> {
+  if (supabaseImageStore) {
+    return await supabaseImageStore.uploadCoinImage({
+      coinId,
+      content: readCoinImage(coinId),
       contentType: 'image/png',
-      extension: 'png',
     });
-    return {
-      keyword,
-      nftName: keywordToNftName(keyword),
-      imageUrl,
-    };
   }
 
   const baseUrl = resolvePublicBaseUrl(request);
-  return {
-    keyword,
-    nftName: keywordToNftName(keyword),
-    imageUrl: `${baseUrl}/api/image/render?keyword=${encodeURIComponent(keyword)}`,
-  };
+  return `${baseUrl}/api/coin/image/${encodeURIComponent(coinId)}`;
 }
 
 async function buildSponsoredMintTx(input: MintTxInput) {
@@ -154,8 +145,6 @@ async function buildSponsoredMintTx(input: MintTxInput) {
   sponsoredTx.setSender(input.sender);
   sponsoredTx.setGasOwner(sponsorAddress);
   sponsoredTx.setGasBudget(BigInt(config.gasBudgetMist));
-  // Some wallet/runtime combinations still fail to decode ValidDuring (enum value 2).
-  // Force legacy-compatible expiration to avoid "Unknown value 2 for enum TransactionExpiration".
   sponsoredTx.setExpiration({ None: true });
   sponsoredTx.setGasPayment(await getGasPayment());
 
@@ -197,24 +186,22 @@ async function main() {
       sponsorAddress,
       packageId: config.packageId,
       mintConfigObjectId: config.mintConfigObjectId,
+      supabaseEnabled: Boolean(supabaseImageStore),
     };
   });
 
-  app.post('/api/image/generate', async (request, reply) => {
-    const parsed = keywordImageSchema.safeParse(request.body);
-    if (!parsed.success) {
-      reply.code(400);
-      return {
-        error: 'Invalid request body',
-        issues: parsed.error.issues,
-      };
-    }
-
+  app.get('/api/coins', async (request, reply) => {
     try {
-      const keyword = normalizeKeyword(parsed.data.keyword);
-      return await resolveKeywordImage(keyword, request);
+      const options = listCoinOptions();
+      const coins = await Promise.all(
+        options.map(async (option) => ({
+          ...option,
+          imageUrl: await resolveCoinImageUrl(option.coinId, request),
+        })),
+      );
+      return { coins };
     } catch (error) {
-      request.log.error({ error }, 'Failed to generate keyword image');
+      request.log.error({ error }, 'Failed to list coin options');
       reply.code(500);
       return {
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -222,24 +209,29 @@ async function main() {
     }
   });
 
-  app.get('/api/image/render', async (request, reply) => {
-    const parsed = keywordImageSchema.safeParse(request.query);
+  app.get('/api/coin/image/:coinId', async (request, reply) => {
+    const parsed = coinIdParamsSchema.safeParse(request.params);
     if (!parsed.success) {
       reply.code(400);
       return {
-        error: 'Invalid query',
+        error: 'Invalid coinId',
         issues: parsed.error.issues,
       };
     }
 
-    const keyword = normalizeKeyword(parsed.data.keyword);
-    const png = await renderKeywordCoinPng(keyword);
-
-    reply
-      .header('Content-Type', 'image/png')
-      .header('Cache-Control', 'public, max-age=60');
-
-    return png;
+    try {
+      const coinId = normalizeCoinId(parsed.data.coinId);
+      const png = readCoinImage(coinId);
+      reply
+        .header('Content-Type', 'image/png')
+        .header('Cache-Control', 'public, max-age=31536000, immutable');
+      return png;
+    } catch (error) {
+      reply.code(404);
+      return {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
   });
 
   app.post('/api/sponsor/mint', async (request, reply) => {
@@ -274,23 +266,24 @@ async function main() {
       };
     }
 
+    let coinId: CoinId;
     try {
-      const mintInput: MintTxInput = {
-        sender: parsed.data.sender,
-        name: parsed.data.name,
-        imageUrl: parsed.data.imageUrl,
+      coinId = normalizeCoinId(parsed.data.animal);
+    } catch (error) {
+      reply.code(400);
+      return {
+        error: error instanceof Error ? error.message : 'Unsupported coin id',
       };
+    }
 
-      if (parsed.data.keyword) {
-        const keyword = normalizeKeyword(parsed.data.keyword);
-        const generated = await resolveKeywordImage(keyword, request);
-        mintInput.imageUrl = generated.imageUrl;
-        if (!mintInput.name) {
-          mintInput.name = generated.nftName;
-        }
-      }
+    try {
+      const imageUrl = await resolveCoinImageUrl(coinId, request);
+      const sponsored = await buildSponsoredMintTx({
+        sender: parsed.data.sender,
+        name: parsed.data.name ?? coinIdToNftName(coinId),
+        imageUrl,
+      });
 
-      const sponsored = await buildSponsoredMintTx(mintInput);
       return {
         ...sponsored,
         gasOwner: sponsorAddress,

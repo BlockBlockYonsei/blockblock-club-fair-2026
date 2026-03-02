@@ -6,16 +6,17 @@ export type SponsoredMintResponse = {
   gasOwner: string;
 };
 
-export type GeneratedImageResponse = {
-  keyword: string;
+export type CoinListItem = {
+  coinId: string;
+  displayName: string;
   nftName: string;
   imageUrl: string;
 };
 
 export async function requestSponsoredMint(params: {
   sender: string;
+  animal: string;
   name?: string;
-  imageUrl?: string;
 }): Promise<SponsoredMintResponse> {
   const response = await fetch(`${backendUrl}/api/sponsor/mint`, {
     method: 'POST',
@@ -33,21 +34,14 @@ export async function requestSponsoredMint(params: {
   return (await response.json()) as SponsoredMintResponse;
 }
 
-export async function requestGeneratedImage(params: {
-  keyword: string;
-}): Promise<GeneratedImageResponse> {
-  const response = await fetch(`${backendUrl}/api/image/generate`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(params),
-  });
+export async function requestCoinList(): Promise<CoinListItem[]> {
+  const response = await fetch(`${backendUrl}/api/coins`);
 
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(`Image API error (${response.status}): ${text}`);
+    throw new Error(`Coin API error (${response.status}): ${text}`);
   }
 
-  return (await response.json()) as GeneratedImageResponse;
+  const data = (await response.json()) as { coins: CoinListItem[] };
+  return data.coins;
 }

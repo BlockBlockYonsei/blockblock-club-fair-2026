@@ -5,10 +5,6 @@ export type AppConfig = {
   host: string;
   trustProxy: boolean;
   publicBaseUrl?: string;
-  s3BucketName?: string;
-  s3Region?: string;
-  s3PublicBaseUrl?: string;
-  s3ObjectPrefix: string;
   allowedOrigins: string[];
   suiRpcUrl: string;
   packageId: string;
@@ -17,6 +13,11 @@ export type AppConfig = {
   gasBudgetMist: string;
   defaultNftName: string;
   defaultNftImageUrl: string;
+  supabaseUrl?: string;
+  supabaseServiceRoleKey?: string;
+  supabaseBucketName?: string;
+  supabasePublicBaseUrl?: string;
+  supabaseObjectPrefix: string;
   rateLimitRelaxed: boolean;
   globalLimitPerMinute: number;
   ipLimitPerMinute: number;
@@ -66,13 +67,23 @@ function toHttpsUrlIfMissingProtocol(url: string): string {
 export function getConfig(): AppConfig {
   const rateLimitRelaxed = boolFromEnv('RATE_LIMIT_RELAXED', false);
   const publicBaseUrl = optionalTrimmed('PUBLIC_BASE_URL');
-  const s3BucketName = optionalTrimmed('S3_BUCKET_NAME');
-  const s3PublicBaseUrl = optionalTrimmed('S3_PUBLIC_BASE_URL');
-  const s3Region = optionalTrimmed('S3_REGION') ?? optionalTrimmed('AWS_REGION');
-  const s3ObjectPrefix = optionalTrimmed('S3_OBJECT_PREFIX') ?? 'generated';
 
-  if (s3BucketName && !s3Region) {
-    throw new Error('S3_REGION (or AWS_REGION) is required when S3_BUCKET_NAME is set');
+  const supabaseUrl = optionalTrimmed('SUPABASE_URL');
+  const supabaseServiceRoleKey = optionalTrimmed('SUPABASE_SERVICE_ROLE_KEY');
+  const supabaseBucketName = optionalTrimmed('SUPABASE_BUCKET_NAME');
+  const supabasePublicBaseUrl = optionalTrimmed('SUPABASE_PUBLIC_BASE_URL');
+  const supabaseObjectPrefix = optionalTrimmed('SUPABASE_OBJECT_PREFIX') ?? 'coin-list';
+
+  const hasSupabaseConfig = Boolean(
+    supabaseUrl || supabaseServiceRoleKey || supabaseBucketName,
+  );
+  const isSupabaseConfigComplete = Boolean(
+    supabaseUrl && supabaseServiceRoleKey && supabaseBucketName,
+  );
+  if (hasSupabaseConfig && !isSupabaseConfigComplete) {
+    throw new Error(
+      'SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_BUCKET_NAME must all be set together',
+    );
   }
 
   return {
@@ -80,12 +91,6 @@ export function getConfig(): AppConfig {
     host: process.env.HOST ?? '0.0.0.0',
     trustProxy: boolFromEnv('TRUST_PROXY', false),
     publicBaseUrl: publicBaseUrl ? publicBaseUrl.replace(/\/+$/, '') : undefined,
-    s3BucketName,
-    s3Region,
-    s3PublicBaseUrl: s3PublicBaseUrl
-      ? toHttpsUrlIfMissingProtocol(s3PublicBaseUrl).replace(/\/+$/, '')
-      : undefined,
-    s3ObjectPrefix: s3ObjectPrefix.replace(/^\/+|\/+$/g, ''),
     allowedOrigins: (
       process.env.ALLOWED_ORIGINS ??
       'http://localhost:5173,https://blockblock-club-fair-2026.onrender.com'
@@ -102,6 +107,13 @@ export function getConfig(): AppConfig {
     defaultNftImageUrl:
       process.env.DEFAULT_NFT_IMAGE_URL ??
       'https://placehold.co/1024x1024/png?text=BlockBlock+Booth',
+    supabaseUrl,
+    supabaseServiceRoleKey,
+    supabaseBucketName,
+    supabasePublicBaseUrl: supabasePublicBaseUrl
+      ? toHttpsUrlIfMissingProtocol(supabasePublicBaseUrl).replace(/\/+$/, '')
+      : undefined,
+    supabaseObjectPrefix: supabaseObjectPrefix.replace(/^\/+|\/+$/g, ''),
     rateLimitRelaxed,
     globalLimitPerMinute: intFromEnv(
       'RATE_LIMIT_GLOBAL_PER_MINUTE',
