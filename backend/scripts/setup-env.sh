@@ -15,7 +15,6 @@ read -r -s -p "SPONSOR_PRIVATE_KEY (suiprivkey...): " SPONSOR_PRIVATE_KEY
 echo
 read -r -p "PUBLIC_BASE_URL (optional, Enter to skip): " PUBLIC_BASE_URL
 read -r -p "SUPABASE_URL (optional, Enter to skip): " SUPABASE_URL
-read -r -p "SUPABASE_SERVICE_ROLE_KEY (optional, Enter to skip): " SUPABASE_SERVICE_ROLE_KEY
 read -r -p "SUPABASE_BUCKET_NAME (optional, Enter to skip): " SUPABASE_BUCKET_NAME
 read -r -p "SUPABASE_PUBLIC_BASE_URL (optional, Enter to skip): " SUPABASE_PUBLIC_BASE_URL
 read -r -p "SUPABASE_OBJECT_PREFIX [coin-list]: " SUPABASE_OBJECT_PREFIX
@@ -51,7 +50,6 @@ replace_key "MINT_CONFIG_OBJECT_ID" "${MINT_CONFIG_OBJECT_ID}"
 replace_key "SPONSOR_PRIVATE_KEY" "${SPONSOR_PRIVATE_KEY}"
 replace_key "PUBLIC_BASE_URL" "${PUBLIC_BASE_URL}"
 replace_key "SUPABASE_URL" "${SUPABASE_URL}"
-replace_key "SUPABASE_SERVICE_ROLE_KEY" "${SUPABASE_SERVICE_ROLE_KEY}"
 replace_key "SUPABASE_BUCKET_NAME" "${SUPABASE_BUCKET_NAME}"
 replace_key "SUPABASE_PUBLIC_BASE_URL" "${SUPABASE_PUBLIC_BASE_URL}"
 replace_key "SUPABASE_OBJECT_PREFIX" "${SUPABASE_OBJECT_PREFIX}"

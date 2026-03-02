@@ -14,7 +14,6 @@ export type AppConfig = {
   defaultNftName: string;
   defaultNftImageUrl: string;
   supabaseUrl?: string;
-  supabaseServiceRoleKey?: string;
   supabaseBucketName?: string;
   supabasePublicBaseUrl?: string;
   supabaseObjectPrefix: string;
@@ -69,21 +68,14 @@ export function getConfig(): AppConfig {
   const publicBaseUrl = optionalTrimmed('PUBLIC_BASE_URL');
 
   const supabaseUrl = optionalTrimmed('SUPABASE_URL');
-  const supabaseServiceRoleKey = optionalTrimmed('SUPABASE_SERVICE_ROLE_KEY');
   const supabaseBucketName = optionalTrimmed('SUPABASE_BUCKET_NAME');
   const supabasePublicBaseUrl = optionalTrimmed('SUPABASE_PUBLIC_BASE_URL');
   const supabaseObjectPrefix = optionalTrimmed('SUPABASE_OBJECT_PREFIX') ?? 'coin-list';
 
-  const hasSupabaseConfig = Boolean(
-    supabaseUrl || supabaseServiceRoleKey || supabaseBucketName,
-  );
-  const isSupabaseConfigComplete = Boolean(
-    supabaseUrl && supabaseServiceRoleKey && supabaseBucketName,
-  );
+  const hasSupabaseConfig = Boolean(supabaseUrl || supabaseBucketName);
+  const isSupabaseConfigComplete = Boolean(supabaseUrl && supabaseBucketName);
   if (hasSupabaseConfig && !isSupabaseConfigComplete) {
-    throw new Error(
-      'SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_BUCKET_NAME must all be set together',
-    );
+    throw new Error('SUPABASE_URL and SUPABASE_BUCKET_NAME must be set together');
   }
 
   return {
@@ -108,7 +100,6 @@ export function getConfig(): AppConfig {
       process.env.DEFAULT_NFT_IMAGE_URL ??
       'https://placehold.co/1024x1024/png?text=BlockBlock+Booth',
     supabaseUrl,
-    supabaseServiceRoleKey,
     supabaseBucketName,
     supabasePublicBaseUrl: supabasePublicBaseUrl
       ? toHttpsUrlIfMissingProtocol(supabasePublicBaseUrl).replace(/\/+$/, '')

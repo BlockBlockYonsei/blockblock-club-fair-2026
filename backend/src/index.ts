@@ -47,10 +47,9 @@ const client = new SuiJsonRpcClient({
 const ipLimiter = new FixedWindowLimiter();
 const senderLimiter = new FixedWindowLimiter();
 const supabaseImageStore =
-  config.supabaseUrl && config.supabaseServiceRoleKey && config.supabaseBucketName
+  config.supabaseUrl && config.supabaseBucketName
     ? new SupabaseImageStore({
         url: config.supabaseUrl,
-        serviceRoleKey: config.supabaseServiceRoleKey,
         bucketName: config.supabaseBucketName,
         objectPrefix: config.supabaseObjectPrefix,
         publicBaseUrl: config.supabasePublicBaseUrl,
@@ -113,11 +112,7 @@ async function getGasPayment() {
 
 async function resolveCoinImageUrl(coinId: CoinId, request: FastifyRequest): Promise<string> {
   if (supabaseImageStore) {
-    return await supabaseImageStore.uploadCoinImage({
-      coinId,
-      content: readCoinImage(coinId),
-      contentType: 'image/png',
-    });
+    return supabaseImageStore.getCoinImageUrl(coinId);
   }
 
   const baseUrl = resolvePublicBaseUrl(request);

@@ -50,14 +50,29 @@ sui client call \
 ## 2) Supabase Storage 준비 (선택)
 
 Supabase를 쓰지 않으면 백엔드가 로컬 이미지 라우트(`/api/coin/image/:coinId`)를 직접 서빙합니다.
-Supabase를 쓰면 백엔드가 동물 코인 PNG를 버킷에 업로드하고 public URL을 사용합니다.
+Supabase를 쓰면 백엔드는 **미리 업로드된 파일의 public URL만 사용**합니다.
 
 1. Supabase 프로젝트 생성
 2. Storage Bucket 생성 (예: `coin-images`)
 3. Bucket을 Public으로 설정
 4. 프로젝트 Settings에서 다음 값 확보
 - `Project URL` (`SUPABASE_URL`)
-- `service_role` key (`SUPABASE_SERVICE_ROLE_KEY`)
+
+사전 업로드 경로 규칙:
+- 버킷 경로: `<SUPABASE_OBJECT_PREFIX>/<animal>.png`
+- 기본 prefix: `coin-list`
+- 예: `coin-list/eagle.png`, `coin-list/tiger.png`
+
+사전 업로드 방법(스크립트):
+
+```bash
+export SUPABASE_URL="https://<project-ref>.supabase.co"
+export SUPABASE_SECRET_KEY="<sb_secret_... or service_role>"
+export SUPABASE_BUCKET_NAME="coin-images"
+export SUPABASE_OBJECT_PREFIX="coin-list"
+
+bash backend/scripts/upload-coin-list-to-supabase.sh
+```
 
 ## 3) 백엔드 설정
 
@@ -76,10 +91,9 @@ cp .env.example .env
 - `ALLOWED_ORIGINS`: 프론트 도메인 (콤마 구분)
 - `PUBLIC_BASE_URL`: 프록시/CDN 뒤 배포 시 백엔드 공개 베이스 URL
 - `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
 - `SUPABASE_BUCKET_NAME`
 - `SUPABASE_PUBLIC_BASE_URL`: 커스텀 public base URL이 있을 때만 사용
-- `SUPABASE_OBJECT_PREFIX`: 업로드 prefix (기본 `coin-list`)
+- `SUPABASE_OBJECT_PREFIX`: 이미지 prefix (기본 `coin-list`)
 - `DEFAULT_NFT_NAME`, `DEFAULT_NFT_IMAGE_URL`
 - `TRUST_PROXY`: 리버스 프록시 뒤 배포 시 `true` 권장
 - `RATE_LIMIT_GLOBAL_PER_MINUTE`: 전역 요청 제한 (기본 300)
@@ -189,5 +203,5 @@ npm run dev
 
 ## 주의
 
-- `SUPABASE_SERVICE_ROLE_KEY`, `SPONSOR_PRIVATE_KEY`는 서버에만 보관
+- `SPONSOR_PRIVATE_KEY`는 서버에만 보관
 - 운영 전 `max_supply`와 부스 동선 리허설 필수
