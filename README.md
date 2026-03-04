@@ -1,6 +1,6 @@
-# BlockBlock Sui Booth (Testnet MVP)
+# BlockBlock Sui Booth (Mainnet)
 
-Sui Testnet 부스용 NFT 민팅 웹앱입니다.
+Sui Mainnet 부스용 NFT 민팅 웹앱입니다.
 
 ## 기능
 
@@ -22,11 +22,11 @@ Sui Testnet 부스용 NFT 민팅 웹앱입니다.
 
 ## 1) Move 배포
 
-사전 준비: Sui CLI 설치, Testnet 계정/가스 확보
+사전 준비: Sui CLI 설치, Mainnet 계정/가스 확보
 
 ```bash
 cd move
-sui client switch --env testnet
+sui client switch --env mainnet
 sui client active-address
 sui move build
 sui client publish --gas-budget 200000000
@@ -87,7 +87,8 @@ cp .env.example .env
 - `SPONSOR_PRIVATE_KEY`: 가스비 대납 지갑의 `suiprivkey...` (ED25519)
 
 선택 값:
-- `SUI_RPC_URL`: 기본 testnet fullnode URL
+- `SUI_NETWORK`: `mainnet`(기본), `testnet`, `devnet`
+- `SUI_RPC_URL`: 네트워크별 RPC URL (미설정 시 `SUI_NETWORK` 기본 URL 사용)
 - `ALLOWED_ORIGINS`: 프론트 도메인 (콤마 구분)
 - `PUBLIC_BASE_URL`: 프록시/CDN 뒤 배포 시 백엔드 공개 베이스 URL
 - `SUPABASE_URL`
@@ -123,7 +124,8 @@ cp .env.example .env
 
 `.env` 값:
 - `VITE_BACKEND_URL`: 백엔드 주소
-- `VITE_SUI_RPC_URL`: Testnet RPC URL
+- `VITE_SUI_NETWORK`: `mainnet`(기본), `testnet`, `devnet`
+- `VITE_SUI_RPC_URL`: 선택 네트워크 RPC URL (미설정 시 네트워크 기본 URL 사용)
 - `VITE_DAPP_NAME`: Slush Wallet 표시용 앱 이름
 
 실행:

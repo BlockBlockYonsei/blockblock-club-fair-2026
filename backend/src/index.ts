@@ -42,7 +42,7 @@ const sponsorKeypair = Ed25519Keypair.fromSecretKey(decoded.secretKey);
 const sponsorAddress = sponsorKeypair.toSuiAddress();
 const client = new SuiJsonRpcClient({
   url: config.suiRpcUrl,
-  network: 'testnet',
+  network: config.suiNetwork,
 });
 const ipLimiter = new FixedWindowLimiter();
 const senderLimiter = new FixedWindowLimiter();
@@ -246,6 +246,7 @@ async function main() {
       sponsorAddress,
       packageId: config.packageId,
       mintConfigObjectId: config.mintConfigObjectId,
+      network: config.suiNetwork,
       supabaseEnabled: Boolean(supabaseImageStore),
       targetConcurrentMints: config.targetConcurrentMints,
       gasCoinLockMs: config.gasCoinLockMs,

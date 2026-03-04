@@ -6,6 +6,7 @@ export type AppConfig = {
   trustProxy: boolean;
   publicBaseUrl?: string;
   allowedOrigins: string[];
+  suiNetwork: 'mainnet' | 'testnet' | 'devnet';
   suiRpcUrl: string;
   packageId: string;
   mintConfigObjectId: string;
@@ -82,9 +83,21 @@ function toHttpsUrlIfMissingProtocol(url: string): string {
   return `https://${url}`;
 }
 
+function networkFromEnv(name: string, fallback: AppConfig['suiNetwork']): AppConfig['suiNetwork'] {
+  const value = process.env[name]?.trim().toLowerCase();
+  if (!value) {
+    return fallback;
+  }
+  if (value === 'mainnet' || value === 'testnet' || value === 'devnet') {
+    return value;
+  }
+  throw new Error(`Invalid network env: ${name}`);
+}
+
 export function getConfig(): AppConfig {
   const rateLimitRelaxed = boolFromEnv('RATE_LIMIT_RELAXED', false);
   const publicBaseUrl = optionalTrimmed('PUBLIC_BASE_URL');
+  const suiNetwork = networkFromEnv('SUI_NETWORK', 'mainnet');
 
   const supabaseUrl = optionalTrimmed('SUPABASE_URL');
   const supabaseBucketName = optionalTrimmed('SUPABASE_BUCKET_NAME');
@@ -110,7 +123,14 @@ export function getConfig(): AppConfig {
       .split(',')
       .map((origin) => origin.trim())
       .filter(Boolean),
-    suiRpcUrl: process.env.SUI_RPC_URL ?? 'https://fullnode.testnet.sui.io:443',
+    suiNetwork,
+    suiRpcUrl:
+      process.env.SUI_RPC_URL ??
+      (suiNetwork === 'mainnet'
+        ? 'https://fullnode.mainnet.sui.io:443'
+        : suiNetwork === 'testnet'
+          ? 'https://fullnode.testnet.sui.io:443'
+          : 'https://fullnode.devnet.sui.io:443'),
     packageId: required('CONTRACT_PACKAGE_ID'),
     mintConfigObjectId: required('MINT_CONFIG_OBJECT_ID'),
     sponsorPrivateKey: required('SPONSOR_PRIVATE_KEY'),
