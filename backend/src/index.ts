@@ -10,7 +10,7 @@ import { fromBase64, toBase64 } from '@mysten/sui/utils';
 import { getConfig } from './config.js';
 import { FixedWindowLimiter } from './limiter.js';
 import {
-  coinIdToNftName,
+  coinIdToDisplayName,
   listCoinOptions,
   normalizeCoinId,
   readCoinImage,
@@ -62,6 +62,8 @@ type MintTxInput = {
   sender: string;
   name?: string;
   imageUrl?: string;
+  animalTrait?: string;
+  attributes?: string;
 };
 
 function toBytes(input: Uint8Array | string): Uint8Array {
@@ -140,6 +142,10 @@ async function resolveCoinImageUrl(coinId: CoinId, request: FastifyRequest): Pro
   return `${baseUrl}/api/coin/image/${encodeURIComponent(coinId)}`;
 }
 
+function buildAnimalAttributes(animalTrait: string): string {
+  return JSON.stringify([{ trait_type: 'Animal', value: animalTrait }]);
+}
+
 async function buildSponsoredMintTx(input: MintTxInput) {
   const mintTx = new Transaction();
   mintTx.moveCall({
@@ -148,6 +154,8 @@ async function buildSponsoredMintTx(input: MintTxInput) {
       mintTx.object(config.mintConfigObjectId),
       mintTx.pure.string(input.name ?? config.defaultNftName),
       mintTx.pure.string(input.imageUrl ?? config.defaultNftImageUrl),
+      mintTx.pure.string(input.animalTrait ?? ''),
+      mintTx.pure.string(input.attributes ?? '[]'),
     ],
   });
   mintTx.setSender(input.sender);
@@ -294,10 +302,13 @@ async function main() {
 
     try {
       const imageUrl = await resolveCoinImageUrl(coinId, request);
+      const animalTrait = coinIdToDisplayName(coinId);
       const sponsored = await buildSponsoredMintTx({
         sender: parsed.data.sender,
-        name: parsed.data.name ?? coinIdToNftName(coinId),
+        name: parsed.data.name ?? config.defaultNftName,
         imageUrl,
+        animalTrait,
+        attributes: buildAnimalAttributes(animalTrait),
       });
 
       return {

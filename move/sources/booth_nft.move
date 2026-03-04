@@ -26,6 +26,8 @@ module blockblock::booth_nft {
         id: UID,
         name: String,
         image_url: String,
+        animal_trait: String,
+        attributes: String,
         minter: address,
         mint_number: u64,
     }
@@ -40,16 +42,22 @@ module blockblock::booth_nft {
         let keys = vector[
             string::utf8(b"name"),
             string::utf8(b"description"),
+            string::utf8(b"image_url"),
             string::utf8(b"image"),
+            string::utf8(b"animal_trait"),
+            string::utf8(b"attributes"),
             string::utf8(b"project_url"),
             string::utf8(b"creator"),
             string::utf8(b"link"),
         ];
 
         let values = vector[
-            string::utf8(b"{name}"),
-            string::utf8(b"BlockBlock booth commemorative NFT"),
+            string::utf8(b"BLOCKBLOCK NFT - 2026 Spring Yonsei Club Fair"),
+            string::utf8(b"BLOCKBLOCK NFT collection for 2026 Club Fair"),
             string::utf8(b"{image_url}"),
+            string::utf8(b"{image_url}"),
+            string::utf8(b"{animal_trait}"),
+            string::utf8(b"{attributes}"),
             string::utf8(b"https://blockblock-club-fair-2026.onrender.com"),
             string::utf8(b"BlockBlock Booth"),
             string::utf8(b"https://blockblock-club-fair-2026.onrender.com"),
@@ -77,7 +85,14 @@ module blockblock::booth_nft {
         transfer::share_object(config);
     }
 
-    public entry fun mint(config: &mut MintConfig, name: String, image_url: String, ctx: &mut TxContext) {
+    public entry fun mint(
+        config: &mut MintConfig,
+        name: String,
+        image_url: String,
+        animal_trait: String,
+        attributes: String,
+        ctx: &mut TxContext,
+    ) {
         let sender = tx_context::sender(ctx);
 
         assert!(!config.paused, E_PAUSED);
@@ -88,6 +103,8 @@ module blockblock::booth_nft {
             id: object::new(ctx),
             name,
             image_url,
+            animal_trait,
+            attributes,
             minter: sender,
             mint_number: config.minted,
         };

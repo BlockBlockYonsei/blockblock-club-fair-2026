@@ -24,14 +24,14 @@ type CoinState =
   | { kind: 'success' }
   | { kind: 'error'; message: string };
 
-const FIXED_NFT_NAME = 'Blockblock NFT - 2026 Spring Yonsei Club Fair';
+const FIXED_NFT_NAME = 'BLOCKBLOCK NFT - 2026 Spring Yonsei Club Fair';
 
-function getSuiScannerObjectUrl(objectId: string, network: string): string {
+function getSuiVisionObjectUrl(objectId: string, network: string): string {
   const normalizedNetwork =
     network === 'mainnet' || network === 'testnet' || network === 'devnet'
       ? network
       : 'testnet';
-  return `https://suiexplorer.com/object/${encodeURIComponent(objectId)}?network=${normalizedNetwork}`;
+  return `https://suivision.xyz/object/${encodeURIComponent(objectId)}?network=${normalizedNetwork}`;
 }
 
 function toUserMessage(error: unknown): string {
@@ -326,7 +326,7 @@ export default function App() {
                 <p>NFT Object: {mintState.objectId}</p>
                 <a
                   className="success-link"
-                  href={getSuiScannerObjectUrl(mintState.objectId, currentNetwork)}
+                  href={getSuiVisionObjectUrl(mintState.objectId, currentNetwork)}
                   target="_blank"
                   rel="noreferrer"
                 >

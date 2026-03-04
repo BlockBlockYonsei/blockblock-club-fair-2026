@@ -95,7 +95,8 @@ export function getConfig(): AppConfig {
     mintConfigObjectId: required('MINT_CONFIG_OBJECT_ID'),
     sponsorPrivateKey: required('SPONSOR_PRIVATE_KEY'),
     gasBudgetMist: process.env.GAS_BUDGET_MIST ?? '30000000',
-    defaultNftName: process.env.DEFAULT_NFT_NAME ?? 'BlockBlock Booth NFT',
+    defaultNftName:
+      process.env.DEFAULT_NFT_NAME ?? 'BLOCKBLOCK NFT - 2026 Spring Yonsei Club Fair',
     defaultNftImageUrl:
       process.env.DEFAULT_NFT_IMAGE_URL ??
       'https://placehold.co/1024x1024/png?text=BlockBlock+Booth',
