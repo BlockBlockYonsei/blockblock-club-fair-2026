@@ -13,6 +13,13 @@ body {
   min-height: 100vh;
 }
 
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
 .loading-screen {
   position: fixed;
   inset: 0;
@@ -107,100 +114,100 @@ body {
   }
 }
 
-button,
-input,
-select,
-textarea {
-  font: inherit;
+.landing-shell {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 28px 10px 0;
+  background: radial-gradient(circle at top, #dbeafe, #f8fafc 45%);
 }
 
-.app-shell {
-  max-width: 760px;
-  margin: 0 auto;
-  padding: 28px 16px 48px;
-  min-width: 0;
-  display: grid;
+.landing-page {
+  width: 100%;
+  max-width: 485px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 16px;
 }
 
-.hero,
-.panel {
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid #cbd5e1;
-  border-radius: 16px;
-  padding: 20px;
-  min-width: 0;
+.landing-header-image {
+  width: auto;
+  height: 36px;
+  max-width: 265px;
 }
 
-.tag {
-  display: inline-block;
-  margin: 0 0 8px;
-  padding: 4px 10px;
-  font-size: 12px;
-  border-radius: 999px;
-  background: #bfdbfe;
+.landing-title-image {
+  width: min(320px, calc(100% - 48px));
+  height: auto;
+  margin-top: -2px;
 }
 
-h1 {
-  margin: 0 0 8px;
-  font-size: 32px;
-}
-
-h2 {
-  margin-top: 0;
-  font-size: 20px;
-}
-
-.description {
-  margin: 0 0 16px;
-  color: #334155;
-}
-
-label {
-  display: grid;
-  gap: 6px;
-  margin-bottom: 12px;
-}
-
-input {
-  height: 40px;
-  border-radius: 10px;
-  border: 1px solid #94a3b8;
-  padding: 0 10px;
-  font-size: 14px;
-}
-
-button {
-  height: 44px;
-  border: 0;
-  border-radius: 10px;
-  background: #0f172a;
-  color: #fff;
-  font-weight: 600;
-  cursor: pointer;
+.step-card {
   width: 100%;
+  border-radius: 16px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.step-title {
+  margin: 0;
+  color: #0f172a;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.step-copy {
+  margin: 0;
+  color: #1e2335;
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.wallet-connect {
+  margin-top: 4px;
+}
+
+.wallet-connect button {
+  width: 100%;
+  min-height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: #f6f7f9;
+  color: #182435;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.step-meta {
+  margin: 10px 0 0;
+  color: #0f172a;
+  font-size: 16px;
+  line-height: 1.25;
 }
 
 .coin-slider-shell {
   position: relative;
-  margin-bottom: 12px;
+  margin-top: 12px;
 }
 
 .coin-nav {
-  width: 34px;
-  min-width: 34px;
-  height: 34px;
-  min-height: 34px;
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
+  min-height: 30px;
   border: 0;
   border-radius: 999px;
   background: transparent;
   color: #0f172a;
-  font-size: 22px;
+  font-size: 20px;
   line-height: 1;
   font-weight: 500;
   display: grid;
@@ -221,85 +228,91 @@ button:disabled {
 }
 
 .coin-nav--left {
-  left: 2px;
+  left: 0;
 }
 
 .coin-nav--right {
-  right: 2px;
+  right: 0;
 }
 
 .coin-slider {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   overflow-x: auto;
-  padding: 4px 30px 8px;
+  padding: 0 24px;
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
   touch-action: pan-x;
+  scrollbar-width: none;
 }
 
 .coin-slider::-webkit-scrollbar {
-  height: 8px;
-}
-
-.coin-slider::-webkit-scrollbar-thumb {
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.28);
+  display: none;
 }
 
 .coin-card {
-  flex: 0 0 118px;
-  width: 118px;
-  aspect-ratio: 1 / 1;
-  height: auto;
+  flex: 0 0 100%;
+  width: 100%;
   margin: 0;
-  padding: 8px;
+  padding: 10px;
   border: 1px solid #cbd5e1;
-  background: #fff;
+  border-radius: 14px;
+  background: #ffffff;
   color: #0f172a;
-  display: grid;
-  justify-items: center;
-  align-content: center;
-  gap: 0;
-  scroll-snap-align: start;
+  scroll-snap-align: center;
   scroll-snap-stop: always;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
 }
 
 .coin-card.selected {
-  border-color: #cbd5e1;
-  box-shadow: none;
-  transform: none;
-  background: #fff8de;
-}
-
-.coin-card.selected img {
   background: #fff8de;
 }
 
 .coin-card img {
   width: 100%;
-  height: auto;
   aspect-ratio: 1 / 1;
   object-fit: contain;
   display: block;
   border-radius: 8px;
-  background: #ffffff;
+  background: inherit;
 }
 
 .selected-coin-name {
-  margin: 0;
+  margin: 14px 0 0;
+  text-align: center;
   color: #0f172a;
   font-weight: 600;
+  font-size: clamp(17px, 2.4vw, 20px);
+  line-height: 1.3;
 }
 
 .panel-actions {
-  display: grid;
-  gap: 10px;
+  margin-top: 6px;
+}
+
+.mint-button {
+  width: 100%;
+  height: 44px;
+  border: 0;
+  border-radius: 10px;
+  background: #0a1638;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mint-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.step-status {
+  margin: 10px 0 0;
 }
 
 .error {
+  margin: 10px 0 0;
   color: #b91c1c;
 }
 
@@ -321,18 +334,25 @@ button:disabled {
   margin-bottom: 0;
 }
 
+.success-actions {
+  margin-top: 8px;
+  display: grid;
+  gap: 8px;
+}
+
 .success-link {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: 8px;
-  padding: 6px 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
   border-radius: 8px;
   border: 1px solid #16a34a;
   background: #ffffff;
   color: #166534;
   text-decoration: none;
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 700;
   line-height: 1.2;
 }
@@ -342,73 +362,207 @@ button:disabled {
   background: #f0fdf4;
 }
 
-.helper {
-  color: #1e293b;
+.brag-button {
+  width: 100%;
+  min-height: 44px;
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #facc15;
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.brag-button:hover,
+.brag-button:focus-visible {
+  background: #eab308;
+}
+
+.nft-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 14px;
+  background: rgba(2, 6, 23, 0.6);
+}
+
+.nft-modal__panel {
+  position: relative;
+  width: min(96vw, 460px);
+  min-height: min(92vh, 640px);
+  border-radius: 18px;
+  padding: 10px;
+  background: #d8f1a8;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.nft-modal__header {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px;
+}
+
+.nft-modal__close {
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  min-height: 36px;
+  border-radius: 999px;
+  border: 0;
+  background: transparent;
+  color: #0f172a;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.nft-modal__title-image {
+  width: min(340px, 100%);
+  height: auto;
+  margin: 0 auto;
+  display: block;
+}
+
+.nft-modal__section {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  padding: 12px 20px 10px;
+  display: grid;
+  place-items: center;
+}
+
+.nft-modal__image-wrap {
+  width: 100%;
+  max-width: 392px;
+  aspect-ratio: 331 / 316;
+  border-radius: 10px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  display: grid;
+  place-items: center;
+}
+
+.nft-modal__image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 10px;
+}
+
+.nft-modal__empty {
+  margin: 0;
+  text-align: center;
+  color: #334155;
+  line-height: 1.45;
+}
+
+.nft-modal__footer {
+  width: 100%;
+  padding: 0 20px 18px;
+  display: grid;
+  gap: 8px;
+}
+
+.nft-modal__save-button {
+  width: 100%;
+  min-height: 48px;
+  border: 0;
+  border-radius: 12px;
+  background: #0a1638;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.nft-modal__save-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.nft-modal__save-error {
+  margin: 0;
+  color: #b91c1c;
+  font-size: 13px;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.landing-footer {
+  width: 100%;
+  display: grid;
+  place-items: center;
+  padding: 34px 0;
+}
+
+.landing-footer img {
+  width: 54px;
+  height: auto;
 }
 
 @media (max-width: 640px) {
-  .app-shell {
-    padding: 20px 12px 36px;
+  .landing-shell {
+    padding: 24px 10px 0;
   }
 
-  h1 {
-    font-size: 26px;
+  .landing-header-image {
+    height: 32px;
   }
 
-  .loading-screen__content {
-    width: min(300px, 100%);
+  .landing-title-image {
+    width: min(300px, calc(100% - 40px));
   }
 
-  .coin-slider {
-    gap: 12px;
-    padding: 0 24px 10px;
-    scroll-padding: 0 24px;
-    scrollbar-width: none;
+  .step-card {
+    padding: 15px;
   }
 
-  .coin-nav {
-    width: 30px;
-    min-width: 30px;
-    height: 30px;
-    min-height: 30px;
+  .step-title {
     font-size: 20px;
   }
 
-  .coin-nav--left {
-    left: 0;
-  }
-
-  .coin-nav--right {
-    right: 0;
-  }
-
-  .coin-slider::-webkit-scrollbar {
-    display: none;
-  }
-
-  .coin-card {
-    flex: 0 0 100%;
-    width: 100%;
-    max-width: 100%;
-    height: auto;
-    padding: 10px;
-    border-radius: 14px;
-    scroll-snap-align: center;
-    aspect-ratio: 1 / 1;
-  }
-
-  .coin-card img {
-    width: 100%;
-    height: auto;
-    margin: 0;
-  }
-
-  .selected-coin-name {
+  .step-copy,
+  .step-meta {
     font-size: 15px;
   }
 
-  .hero,
-  .panel {
-    padding: 16px;
+  .selected-coin-name {
+    font-size: 16px;
+  }
+
+  .nft-modal {
+    padding: 8px;
+  }
+
+  .nft-modal__panel {
+    width: 100%;
+    min-height: 92vh;
+    gap: 16px;
+  }
+
+  .nft-modal__title-image {
+    width: min(300px, 100%);
+  }
+
+  .nft-modal__section {
+    padding: 8px 12px 8px;
+  }
+
+  .nft-modal__footer {
+    padding: 0 12px 14px;
+  }
+
+  .nft-modal__save-button {
+    min-height: 46px;
+    font-size: 15px;
   }
 }
