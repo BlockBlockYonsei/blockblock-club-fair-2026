@@ -27,11 +27,14 @@ type CoinState =
 const FIXED_NFT_NAME = 'BLOCKBLOCK NFT - 2026 Spring Yonsei Club Fair';
 
 function getSuiVisionObjectUrl(objectId: string, network: string): string {
-  const normalizedNetwork =
-    network === 'mainnet' || network === 'testnet' || network === 'devnet'
-      ? network
-      : 'testnet';
-  return `https://suivision.xyz/object/${encodeURIComponent(objectId)}?network=${normalizedNetwork}`;
+  const encodedObjectId = encodeURIComponent(objectId);
+  if (network === 'testnet') {
+    return `https://testnet.suivision.xyz/object/${encodedObjectId}`;
+  }
+  if (network === 'devnet') {
+    return `https://devnet.suivision.xyz/object/${encodedObjectId}`;
+  }
+  return `https://suivision.xyz/object/${encodedObjectId}`;
 }
 
 function toUserMessage(error: unknown): string {
