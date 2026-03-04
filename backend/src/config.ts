@@ -140,11 +140,11 @@ export function getConfig(): AppConfig {
       rateLimitRelaxed ? 4 : 2,
     ),
     targetConcurrentMints: intFromEnv('TARGET_CONCURRENT_MINTS', 10),
-    gasCoinLockMs: intFromEnv('GAS_COIN_LOCK_MS', 30_000),
+    gasCoinLockMs: intFromEnv('GAS_COIN_LOCK_MS', 10_000),
     gasCoinFetchLimit: intFromEnv('GAS_COIN_FETCH_LIMIT', 200),
-    gasCoinReserveRetries: intFromEnv('GAS_COIN_RESERVE_RETRIES', 8),
+    gasCoinReserveRetries: intFromEnv('GAS_COIN_RESERVE_RETRIES', 60),
     gasCoinReserveRetryDelayMs: intFromEnvAllowZero('GAS_COIN_RESERVE_RETRY_DELAY_MS', 250),
-    gasCoinMinBalanceBps: intFromEnv('GAS_COIN_MIN_BALANCE_BPS', 12000),
+    gasCoinMinBalanceBps: intFromEnv('GAS_COIN_MIN_BALANCE_BPS', 10500),
     keepaliveKey,
   };
 }
