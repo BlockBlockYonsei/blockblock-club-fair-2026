@@ -46,6 +46,8 @@ const client = new SuiJsonRpcClient({
 });
 const ipLimiter = new FixedWindowLimiter();
 const senderLimiter = new FixedWindowLimiter();
+const lockedGasCoins = new Map<string, number>();
+const GAS_COIN_LOCK_MS = 90_000;
 const supabaseImageStore =
   config.supabaseUrl && config.supabaseBucketName
     ? new SupabaseImageStore({
@@ -91,15 +93,34 @@ async function getGasPayment() {
   const coins = await client.getCoins({
     owner: sponsorAddress,
     coinType: '0x2::sui::SUI',
-    limit: 10,
+    limit: 50,
   });
 
+  const now = Date.now();
+  for (const [objectId, lockUntil] of lockedGasCoins.entries()) {
+    if (lockUntil <= now) {
+      lockedGasCoins.delete(objectId);
+    }
+  }
+
   const minRequired = BigInt(config.gasBudgetMist);
-  const coin = coins.data.find((item: { balance: string }) => BigInt(item.balance) > minRequired);
+  const candidates = coins.data.filter(
+    (item: { balance: string; coinObjectId: string }) =>
+      BigInt(item.balance) > minRequired && !lockedGasCoins.has(item.coinObjectId),
+  );
+
+  if (candidates.length === 0) {
+    throw new Error('No available sponsor gas coin (all locked or insufficient balance)');
+  }
+
+  const randomIndex = Math.floor(Math.random() * candidates.length);
+  const coin = candidates[randomIndex];
 
   if (!coin) {
     throw new Error('Sponsor wallet has no gas coin with enough balance');
   }
+
+  lockedGasCoins.set(coin.coinObjectId, now + GAS_COIN_LOCK_MS);
 
   return [
     {
