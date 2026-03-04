@@ -47,7 +47,7 @@ const client = new SuiJsonRpcClient({
 const ipLimiter = new FixedWindowLimiter();
 const senderLimiter = new FixedWindowLimiter();
 const lockedGasCoins = new Map<string, number>();
-const GAS_COIN_LOCK_MS = 90_000;
+const GAS_COIN_LOCK_MS = config.gasCoinLockMs;
 const supabaseImageStore =
   config.supabaseUrl && config.supabaseBucketName
     ? new SupabaseImageStore({
@@ -91,11 +91,21 @@ function resolvePublicBaseUrl(request: FastifyRequest): string {
   return `${protocol}://${host}`;
 }
 
+function hasValidKeepaliveKey(request: FastifyRequest): boolean {
+  if (!config.keepaliveKey) {
+    return true;
+  }
+
+  const rawHeader = request.headers['x-keepalive-key'];
+  const provided = Array.isArray(rawHeader) ? rawHeader[0] : rawHeader;
+  return typeof provided === 'string' && provided.trim() === config.keepaliveKey;
+}
+
 async function getGasPayment() {
   const coins = await client.getCoins({
     owner: sponsorAddress,
     coinType: '0x2::sui::SUI',
-    limit: 50,
+    limit: config.gasCoinFetchLimit,
   });
 
   const now = Date.now();
@@ -105,14 +115,17 @@ async function getGasPayment() {
     }
   }
 
-  const minRequired = BigInt(config.gasBudgetMist);
+  const minRequired =
+    (BigInt(config.gasBudgetMist) * BigInt(config.gasCoinMinBalanceBps) + 9999n) / 10000n;
   const candidates = coins.data.filter(
     (item: { balance: string; coinObjectId: string }) =>
       BigInt(item.balance) > minRequired && !lockedGasCoins.has(item.coinObjectId),
   );
 
   if (candidates.length === 0) {
-    throw new Error('No available sponsor gas coin (all locked or insufficient balance)');
+    throw new Error(
+      `No available sponsor gas coin. Ensure at least ${config.targetConcurrentMints} SUI coin objects each above ${minRequired.toString()} MIST and wait for lock release (${GAS_COIN_LOCK_MS}ms).`,
+    );
   }
 
   const randomIndex = Math.floor(Math.random() * candidates.length);
@@ -131,6 +144,29 @@ async function getGasPayment() {
       digest: coin.digest,
     },
   ];
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+async function reserveGasPaymentWithRetry() {
+  let lastError: unknown = null;
+  for (let attempt = 0; attempt <= config.gasCoinReserveRetries; attempt += 1) {
+    try {
+      return await getGasPayment();
+    } catch (error) {
+      lastError = error;
+      if (attempt === config.gasCoinReserveRetries) {
+        break;
+      }
+      await sleep(config.gasCoinReserveRetryDelayMs);
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error(String(lastError));
 }
 
 async function resolveCoinImageUrl(coinId: CoinId, request: FastifyRequest): Promise<string> {
@@ -170,7 +206,7 @@ async function buildSponsoredMintTx(input: MintTxInput) {
   sponsoredTx.setGasOwner(sponsorAddress);
   sponsoredTx.setGasBudget(BigInt(config.gasBudgetMist));
   sponsoredTx.setExpiration({ None: true });
-  sponsoredTx.setGasPayment(await getGasPayment());
+  sponsoredTx.setGasPayment(await reserveGasPaymentWithRetry());
 
   const txBytes = await sponsoredTx.build({ client });
   const { signature } = await sponsorKeypair.signTransaction(toBytes(txBytes));
@@ -211,7 +247,21 @@ async function main() {
       packageId: config.packageId,
       mintConfigObjectId: config.mintConfigObjectId,
       supabaseEnabled: Boolean(supabaseImageStore),
+      targetConcurrentMints: config.targetConcurrentMints,
+      gasCoinLockMs: config.gasCoinLockMs,
+      gasCoinFetchLimit: config.gasCoinFetchLimit,
+      lockedGasCoins: lockedGasCoins.size,
     };
+  });
+
+  app.get('/api/keepalive', { logLevel: 'silent' }, async (request, reply) => {
+    if (!hasValidKeepaliveKey(request)) {
+      reply.code(401);
+      return { ok: false, error: 'Unauthorized' };
+    }
+
+    app.log.info('ka');
+    return { ok: true };
   });
 
   app.get('/api/coins', async (request, reply) => {

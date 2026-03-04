@@ -1,0 +1,33 @@
+name: Render Keepalive
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping keepalive endpoint
+        env:
+          KEEPALIVE_URL: ${{ secrets.RENDER_KEEPALIVE_URL }}
+          KEEPALIVE_KEY: ${{ secrets.RENDER_KEEPALIVE_KEY }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${KEEPALIVE_URL}" ]; then
+            echo "RENDER_KEEPALIVE_URL is empty. Skipping."
+            exit 0
+          fi
+
+          if [ -n "${KEEPALIVE_KEY}" ]; then
+            curl -fsS --retry 2 --max-time 20 \
+              -H "x-keepalive-key: ${KEEPALIVE_KEY}" \
+              "${KEEPALIVE_URL}?ts=$(date +%s)" >/dev/null
+          else
+            curl -fsS --retry 2 --max-time 20 \
+              "${KEEPALIVE_URL}?ts=$(date +%s)" >/dev/null
+          fi
+
+          echo "keepalive ping succeeded"

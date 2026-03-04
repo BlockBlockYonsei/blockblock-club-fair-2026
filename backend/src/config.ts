@@ -21,6 +21,13 @@ export type AppConfig = {
   globalLimitPerMinute: number;
   ipLimitPerMinute: number;
   senderLimitPer10Minutes: number;
+  targetConcurrentMints: number;
+  gasCoinLockMs: number;
+  gasCoinFetchLimit: number;
+  gasCoinReserveRetries: number;
+  gasCoinReserveRetryDelayMs: number;
+  gasCoinMinBalanceBps: number;
+  keepaliveKey?: string;
 };
 
 function required(name: string): string {
@@ -51,6 +58,18 @@ function intFromEnv(name: string, fallback: number): number {
   return parsed;
 }
 
+function intFromEnvAllowZero(name: string, fallback: number): number {
+  const raw = process.env[name]?.trim();
+  if (!raw) {
+    return fallback;
+  }
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    throw new Error(`Invalid integer env: ${name}`);
+  }
+  return parsed;
+}
+
 function optionalTrimmed(name: string): string | undefined {
   const value = process.env[name]?.trim();
   return value ? value : undefined;
@@ -71,6 +90,7 @@ export function getConfig(): AppConfig {
   const supabaseBucketName = optionalTrimmed('SUPABASE_BUCKET_NAME');
   const supabasePublicBaseUrl = optionalTrimmed('SUPABASE_PUBLIC_BASE_URL');
   const supabaseObjectPrefix = optionalTrimmed('SUPABASE_OBJECT_PREFIX') ?? 'coin-list';
+  const keepaliveKey = optionalTrimmed('KEEPALIVE_KEY');
 
   const hasSupabaseConfig = Boolean(supabaseUrl || supabaseBucketName);
   const isSupabaseConfigComplete = Boolean(supabaseUrl && supabaseBucketName);
@@ -94,7 +114,7 @@ export function getConfig(): AppConfig {
     packageId: required('CONTRACT_PACKAGE_ID'),
     mintConfigObjectId: required('MINT_CONFIG_OBJECT_ID'),
     sponsorPrivateKey: required('SPONSOR_PRIVATE_KEY'),
-    gasBudgetMist: process.env.GAS_BUDGET_MIST ?? '30000000',
+    gasBudgetMist: process.env.GAS_BUDGET_MIST ?? '8000000',
     defaultNftName:
       process.env.DEFAULT_NFT_NAME ?? 'BLOCKBLOCK NFT - 2026 Spring Yonsei Club Fair',
     defaultNftImageUrl:
@@ -119,5 +139,12 @@ export function getConfig(): AppConfig {
       'RATE_LIMIT_SENDER_PER_10_MINUTES',
       rateLimitRelaxed ? 4 : 2,
     ),
+    targetConcurrentMints: intFromEnv('TARGET_CONCURRENT_MINTS', 10),
+    gasCoinLockMs: intFromEnv('GAS_COIN_LOCK_MS', 30_000),
+    gasCoinFetchLimit: intFromEnv('GAS_COIN_FETCH_LIMIT', 200),
+    gasCoinReserveRetries: intFromEnv('GAS_COIN_RESERVE_RETRIES', 8),
+    gasCoinReserveRetryDelayMs: intFromEnvAllowZero('GAS_COIN_RESERVE_RETRY_DELAY_MS', 250),
+    gasCoinMinBalanceBps: intFromEnv('GAS_COIN_MIN_BALANCE_BPS', 12000),
+    keepaliveKey,
   };
 }
