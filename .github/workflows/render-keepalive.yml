@@ -22,11 +22,13 @@ jobs:
           fi
 
           if [ -n "${KEEPALIVE_KEY}" ]; then
-            curl -fsS --retry 2 --max-time 20 \
+            curl -fsS --retry 4 --retry-all-errors --retry-delay 3 \
+              --connect-timeout 15 --max-time 90 \
               -H "x-keepalive-key: ${KEEPALIVE_KEY}" \
               "${KEEPALIVE_URL}?ts=$(date +%s)" >/dev/null
           else
-            curl -fsS --retry 2 --max-time 20 \
+            curl -fsS --retry 4 --retry-all-errors --retry-delay 3 \
+              --connect-timeout 15 --max-time 90 \
               "${KEEPALIVE_URL}?ts=$(date +%s)" >/dev/null
           fi
 
