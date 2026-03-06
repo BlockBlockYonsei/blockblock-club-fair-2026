@@ -127,6 +127,8 @@ cp .env.example .env
 - `VITE_SUI_NETWORK`: `mainnet`(기본), `testnet`, `devnet`
 - `VITE_SUI_RPC_URL`: 선택 네트워크 RPC URL (미설정 시 네트워크 기본 URL 사용)
 - `VITE_DAPP_NAME`: Slush Wallet 표시용 앱 이름
+- `VITE_API_TIMEOUT_MS`: API 요청 타임아웃(ms, 기본 `15000`)
+- `VITE_COIN_LIST_MAX_RETRIES`: 초기 코인 목록 재시도 횟수(기본 `2`)
 
 실행:
 
@@ -209,6 +211,23 @@ GitHub 저장소 Secrets 설정:
 
 Render Backend 환경변수:
 1. `KEEPALIVE_KEY`를 임의의 긴 랜덤 문자열로 설정
+
+## Render Healthcheck + Alert (5분 주기)
+
+이 저장소에는 상태 점검용 GitHub Actions 스케줄러가 포함되어 있습니다:
+- 파일: `.github/workflows/render-healthcheck.yml`
+- 주기: `2-59/5 * * * *` (5분마다, keepalive와 충돌 완화)
+- 점검 경로: `/`, `/health`, `/api/coins` (필요 시 `/api/keepalive`)
+
+GitHub 저장소 Secrets 설정:
+1. `RENDER_BASE_URL`: `https://<your-render-service>.onrender.com`
+2. `RENDER_KEEPALIVE_URL`: `https://<your-render-service>.onrender.com/api/keepalive` (선택)
+3. `RENDER_KEEPALIVE_KEY`: 백엔드 `KEEPALIVE_KEY`와 동일값 (선택)
+4. `RENDER_ALERT_WEBHOOK`: Slack/Discord Incoming Webhook URL (선택)
+
+알림 권장:
+1. GitHub 우상단 `Settings > Notifications`에서 Actions 실패 알림 활성화
+2. Render 대시보드 `Alerts`에서 서비스 다운/배포 실패 알림 채널 연결
 
 ## 50명/분 안정성 체크리스트
 

@@ -1,0 +1,95 @@
+name: Render Healthcheck
+
+on:
+  schedule:
+    - cron: '2-59/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate required secret
+        env:
+          RENDER_BASE_URL: ${{ secrets.RENDER_BASE_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${RENDER_BASE_URL}" ]; then
+            echo "RENDER_BASE_URL is empty. Skipping."
+            exit 0
+          fi
+
+      - name: Check Render endpoints
+        env:
+          RENDER_BASE_URL: ${{ secrets.RENDER_BASE_URL }}
+          RENDER_KEEPALIVE_URL: ${{ secrets.RENDER_KEEPALIVE_URL }}
+          RENDER_KEEPALIVE_KEY: ${{ secrets.RENDER_KEEPALIVE_KEY }}
+        run: |
+          set -euo pipefail
+
+          base_url="${RENDER_BASE_URL%/}"
+          failed=0
+
+          check() {
+            local url="$1"
+            local header_name="${2:-}"
+            local header_value="${3:-}"
+
+            echo "::group::Healthcheck ${url}"
+            if [ -n "${header_name}" ] && [ -n "${header_value}" ]; then
+              curl --http1.1 -fsS --retry 2 --retry-all-errors --retry-delay 2 \
+                --connect-timeout 10 --max-time 25 \
+                -H "${header_name}: ${header_value}" \
+                "${url}" >/dev/null
+            else
+              curl --http1.1 -fsS --retry 2 --retry-all-errors --retry-delay 2 \
+                --connect-timeout 10 --max-time 25 \
+                "${url}" >/dev/null
+            fi
+            echo "ok ${url}"
+            echo "::endgroup::"
+          }
+
+          for path in "/" "/health" "/api/coins"; do
+            if ! check "${base_url}${path}"; then
+              failed=1
+            fi
+          done
+
+          if [ -n "${RENDER_KEEPALIVE_URL}" ]; then
+            if [ -n "${RENDER_KEEPALIVE_KEY}" ]; then
+              if ! check "${RENDER_KEEPALIVE_URL}?ts=$(date +%s)" "x-keepalive-key" "${RENDER_KEEPALIVE_KEY}"; then
+                failed=1
+              fi
+            else
+              if ! check "${RENDER_KEEPALIVE_URL}?ts=$(date +%s)"; then
+                failed=1
+              fi
+            fi
+          fi
+
+          if [ "${failed}" -ne 0 ]; then
+            echo "One or more endpoint checks failed."
+            exit 1
+          fi
+
+      - name: Send webhook alert on failure
+        if: failure()
+        env:
+          RENDER_ALERT_WEBHOOK: ${{ secrets.RENDER_ALERT_WEBHOOK }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${RENDER_ALERT_WEBHOOK}" ]; then
+            echo "RENDER_ALERT_WEBHOOK is empty. Skip webhook alert."
+            exit 0
+          fi
+
+          ts_utc="$(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          msg="Render healthcheck failed at ${ts_utc}. ${run_url}"
+          payload="$(printf '{"text":"%s","content":"%s"}' "${msg}" "${msg}")"
+
+          curl -fsS -X POST -H "Content-Type: application/json" \
+            --data "${payload}" \
+            "${RENDER_ALERT_WEBHOOK}" || true
