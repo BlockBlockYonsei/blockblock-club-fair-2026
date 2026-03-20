@@ -91,16 +91,6 @@ function resolvePublicBaseUrl(request: FastifyRequest): string {
   return `${protocol}://${host}`;
 }
 
-function hasValidKeepaliveKey(request: FastifyRequest): boolean {
-  if (!config.keepaliveKey) {
-    return true;
-  }
-
-  const rawHeader = request.headers['x-keepalive-key'];
-  const provided = Array.isArray(rawHeader) ? rawHeader[0] : rawHeader;
-  return typeof provided === 'string' && provided.trim() === config.keepaliveKey;
-}
-
 async function getGasPayment() {
   const coins = await client.getCoins({
     owner: sponsorAddress,
@@ -253,16 +243,6 @@ async function main() {
       gasCoinFetchLimit: config.gasCoinFetchLimit,
       lockedGasCoins: lockedGasCoins.size,
     };
-  });
-
-  app.get('/api/keepalive', { logLevel: 'silent' }, async (request, reply) => {
-    if (!hasValidKeepaliveKey(request)) {
-      reply.code(401);
-      return { ok: false, error: 'Unauthorized' };
-    }
-
-    app.log.info('ka');
-    return { ok: true };
   });
 
   app.get('/api/coins', async (request, reply) => {

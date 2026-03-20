@@ -192,43 +192,6 @@ npm run dev
 }
 ```
 
-### `GET /api/keepalive`
-
-- Render 슬립 방지용 주기 호출 엔드포인트입니다.
-- 응답: `{ "ok": true }`
-- 서버 로그에는 요청당 짧은 로그(`ka`) 1줄만 남깁니다.
-- `KEEPALIVE_KEY`가 설정된 경우 `x-keepalive-key` 헤더가 일치해야 호출됩니다.
-
-## Render Keepalive (5분 주기)
-
-이 저장소에는 GitHub Actions 스케줄러가 포함되어 있습니다:
-- 파일: `.github/workflows/render-keepalive.yml`
-- 주기: `*/5 * * * *` (5분마다)
-
-GitHub 저장소 Secrets 설정:
-1. `RENDER_KEEPALIVE_URL`: `https://<your-render-service>/api/keepalive`
-2. `RENDER_KEEPALIVE_KEY`: `KEEPALIVE_KEY`와 동일한 값 (선택이지만 권장)
-
-Render Backend 환경변수:
-1. `KEEPALIVE_KEY`를 임의의 긴 랜덤 문자열로 설정
-
-## Render Healthcheck + Alert (5분 주기)
-
-이 저장소에는 상태 점검용 GitHub Actions 스케줄러가 포함되어 있습니다:
-- 파일: `.github/workflows/render-healthcheck.yml`
-- 주기: `2-59/5 * * * *` (5분마다, keepalive와 충돌 완화)
-- 점검 경로: `/`, `/health`, `/api/coins` (필요 시 `/api/keepalive`)
-
-GitHub 저장소 Secrets 설정:
-1. `RENDER_BASE_URL`: `https://<your-render-service>.onrender.com`
-2. `RENDER_KEEPALIVE_URL`: `https://<your-render-service>.onrender.com/api/keepalive` (선택)
-3. `RENDER_KEEPALIVE_KEY`: 백엔드 `KEEPALIVE_KEY`와 동일값 (선택)
-4. `RENDER_ALERT_WEBHOOK`: Slack/Discord Incoming Webhook URL (선택)
-
-알림 권장:
-1. GitHub 우상단 `Settings > Notifications`에서 Actions 실패 알림 활성화
-2. Render 대시보드 `Alerts`에서 서비스 다운/배포 실패 알림 채널 연결
-
 ## 50명/분 안정성 체크리스트
 
 - 전용 RPC 사용(공용 fullnode는 혼잡/제한 가능)

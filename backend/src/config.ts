@@ -28,7 +28,6 @@ export type AppConfig = {
   gasCoinReserveRetries: number;
   gasCoinReserveRetryDelayMs: number;
   gasCoinMinBalanceBps: number;
-  keepaliveKey?: string;
 };
 
 function required(name: string): string {
@@ -103,7 +102,6 @@ export function getConfig(): AppConfig {
   const supabaseBucketName = optionalTrimmed('SUPABASE_BUCKET_NAME');
   const supabasePublicBaseUrl = optionalTrimmed('SUPABASE_PUBLIC_BASE_URL');
   const supabaseObjectPrefix = optionalTrimmed('SUPABASE_OBJECT_PREFIX') ?? 'coin-list';
-  const keepaliveKey = optionalTrimmed('KEEPALIVE_KEY');
 
   const hasSupabaseConfig = Boolean(supabaseUrl || supabaseBucketName);
   const isSupabaseConfigComplete = Boolean(supabaseUrl && supabaseBucketName);
@@ -165,6 +163,5 @@ export function getConfig(): AppConfig {
     gasCoinReserveRetries: intFromEnv('GAS_COIN_RESERVE_RETRIES', 60),
     gasCoinReserveRetryDelayMs: intFromEnvAllowZero('GAS_COIN_RESERVE_RETRY_DELAY_MS', 250),
     gasCoinMinBalanceBps: intFromEnv('GAS_COIN_MIN_BALANCE_BPS', 10500),
-    keepaliveKey,
   };
 }
