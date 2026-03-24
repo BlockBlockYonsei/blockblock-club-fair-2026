@@ -1,0 +1,91 @@
+# If you want Render to attach this Blueprint to existing services,
+# make these names match the current service names in your Render dashboard.
+services:
+  - type: web
+    name: blockblock-club-fair-2026-backend
+    runtime: node
+    rootDir: .
+    buildCommand: npm install && npm run build --workspace backend
+    startCommand: npm run start --workspace backend
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: TRUST_PROXY
+        value: "true"
+      - key: SUI_NETWORK
+        value: testnet
+      - key: SUI_RPC_URL
+        value: https://fullnode.testnet.sui.io:443
+      - key: CONTRACT_PACKAGE_ID
+        value: 0x45cef0805b9170e86ebe8a5472385ec53f6bf5bdd2d3899feefdfae35338491d
+      - key: PUBLIC_BASE_URL
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: MINT_CONFIG_OBJECT_ID
+        sync: false
+      - key: SPONSOR_PRIVATE_KEY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_BUCKET_NAME
+        sync: false
+      - key: SUPABASE_PUBLIC_BASE_URL
+        sync: false
+      - key: SUPABASE_OBJECT_PREFIX
+        sync: false
+      - key: GAS_BUDGET_MIST
+        sync: false
+      - key: DEFAULT_NFT_NAME
+        sync: false
+      - key: DEFAULT_NFT_IMAGE_URL
+        sync: false
+      - key: RATE_LIMIT_RELAXED
+        sync: false
+      - key: RATE_LIMIT_GLOBAL_PER_MINUTE
+        sync: false
+      - key: RATE_LIMIT_IP_PER_MINUTE
+        sync: false
+      - key: RATE_LIMIT_SENDER_PER_10_MINUTES
+        sync: false
+      - key: TARGET_CONCURRENT_MINTS
+        sync: false
+      - key: GAS_COIN_LOCK_MS
+        sync: false
+      - key: GAS_COIN_FETCH_LIMIT
+        sync: false
+      - key: GAS_COIN_RESERVE_RETRIES
+        sync: false
+      - key: GAS_COIN_RESERVE_RETRY_DELAY_MS
+        sync: false
+      - key: GAS_COIN_MIN_BALANCE_BPS
+        sync: false
+
+  - type: web
+    name: blockblock-club-fair-2026
+    runtime: static
+    rootDir: .
+    buildCommand: npm install && npm run build --workspace frontend
+    staticPublishPath: frontend/dist
+    autoDeployTrigger: commit
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: VITE_SUI_NETWORK
+        value: testnet
+      - key: VITE_SUI_RPC_URL
+        value: https://fullnode.testnet.sui.io:443
+      - key: VITE_BACKEND_URL
+        sync: false
+      - key: VITE_DAPP_NAME
+        sync: false
+      - key: VITE_API_TIMEOUT_MS
+        sync: false
+      - key: VITE_COIN_LIST_MAX_RETRIES
+        sync: false

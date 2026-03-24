@@ -1,6 +1,6 @@
-# BlockBlock Sui Booth (Mainnet)
+# BlockBlock Sui Booth (Testnet Default)
 
-Sui Mainnet 부스용 NFT 민팅 웹앱입니다.
+Sui Testnet 기본 설정의 부스용 NFT 민팅 웹앱입니다.
 
 ## 기능
 
@@ -22,17 +22,19 @@ Sui Mainnet 부스용 NFT 민팅 웹앱입니다.
 
 ## 1) Move 배포
 
-사전 준비: Sui CLI 설치, Mainnet 계정/가스 확보
+사전 준비: Sui CLI 설치, Testnet 계정/가스 확보
 
 ```bash
 cd move
-sui client switch --env mainnet
+sui client switch --env testnet
 sui client active-address
 sui move build
 sui client publish --gas-budget 200000000
 ```
 
 배포 결과에서 `packageId`를 기록합니다.
+현재 저장소의 최근 testnet 배포 패키지 ID는 `move/Published.toml`의
+`0x45cef0805b9170e86ebe8a5472385ec53f6bf5bdd2d3899feefdfae35338491d` 입니다.
 
 그 다음 `MintConfig` shared object를 1회 생성:
 
@@ -87,7 +89,7 @@ cp .env.example .env
 - `SPONSOR_PRIVATE_KEY`: 가스비 대납 지갑의 `suiprivkey...` (ED25519)
 
 선택 값:
-- `SUI_NETWORK`: `mainnet`(기본), `testnet`, `devnet`
+- `SUI_NETWORK`: `testnet`(기본), `mainnet`, `devnet`
 - `SUI_RPC_URL`: 네트워크별 RPC URL (미설정 시 `SUI_NETWORK` 기본 URL 사용)
 - `ALLOWED_ORIGINS`: 프론트 도메인 (콤마 구분)
 - `PUBLIC_BASE_URL`: 프록시/CDN 뒤 배포 시 백엔드 공개 베이스 URL
@@ -124,7 +126,7 @@ cp .env.example .env
 
 `.env` 값:
 - `VITE_BACKEND_URL`: 백엔드 주소
-- `VITE_SUI_NETWORK`: `mainnet`(기본), `testnet`, `devnet`
+- `VITE_SUI_NETWORK`: `testnet`(기본), `mainnet`, `devnet`
 - `VITE_SUI_RPC_URL`: 선택 네트워크 RPC URL (미설정 시 네트워크 기본 URL 사용)
 - `VITE_DAPP_NAME`: Slush Wallet 표시용 앱 이름
 - `VITE_API_TIMEOUT_MS`: API 요청 타임아웃(ms, 기본 `15000`)
@@ -204,6 +206,42 @@ npm run dev
 - Frontend: Render (Static/Web Service 모두 가능)
 - Backend: Render/Fly.io/Railway
 - RPC: 신뢰 가능한 제공자(유료 플랜 권장)
+
+## Render 전환 체크
+
+저장소 루트의 `render.yaml`로 Frontend/Backend 기본 배포 설정을 관리합니다.
+기존 Render 서비스에 붙이려면 `render.yaml`의 `name`이 현재 Render 서비스 이름과 정확히 같아야 합니다.
+
+`render.yaml`이 직접 관리하는 값:
+- Backend: `NODE_VERSION`, `TRUST_PROXY`, `SUI_NETWORK`, `SUI_RPC_URL`, `CONTRACT_PACKAGE_ID`
+- Frontend: `NODE_VERSION`, `VITE_SUI_NETWORK`, `VITE_SUI_RPC_URL`
+
+Render 콘솔에서 직접 넣어야 하는 값(`sync: false`):
+- Backend: `PUBLIC_BASE_URL`, `ALLOWED_ORIGINS`, `MINT_CONFIG_OBJECT_ID`, `SPONSOR_PRIVATE_KEY`
+- Frontend: `VITE_BACKEND_URL`
+
+Supabase를 쓰는 경우만 추가:
+- Backend: `SUPABASE_URL`, `SUPABASE_BUCKET_NAME`, `SUPABASE_PUBLIC_BASE_URL`, `SUPABASE_OBJECT_PREFIX`
+
+튜닝값을 기본값 대신 직접 쓰는 경우만 추가:
+- Backend: `GAS_BUDGET_MIST`, `DEFAULT_NFT_NAME`, `DEFAULT_NFT_IMAGE_URL`
+- Backend: `RATE_LIMIT_RELAXED`, `RATE_LIMIT_GLOBAL_PER_MINUTE`, `RATE_LIMIT_IP_PER_MINUTE`, `RATE_LIMIT_SENDER_PER_10_MINUTES`
+- Backend: `TARGET_CONCURRENT_MINTS`, `GAS_COIN_LOCK_MS`, `GAS_COIN_FETCH_LIMIT`, `GAS_COIN_RESERVE_RETRIES`, `GAS_COIN_RESERVE_RETRY_DELAY_MS`, `GAS_COIN_MIN_BALANCE_BPS`
+- Frontend: `VITE_DAPP_NAME`, `VITE_API_TIMEOUT_MS`, `VITE_COIN_LIST_MAX_RETRIES`
+
+Render 콘솔에서 삭제해도 되는 값:
+- Backend의 기존 mainnet 값들: `SUI_NETWORK=mainnet`, `SUI_RPC_URL=https://fullnode.mainnet.sui.io:443`, mainnet용 `CONTRACT_PACKAGE_ID`, mainnet용 `MINT_CONFIG_OBJECT_ID`
+- Runtime에서 읽지 않는 값: `SUPABASE_SERVICE_ROLE_KEY`, `KEEPALIVE_KEY`
+
+Render 콘솔에서 삭제하지 말아야 하는 값:
+- `SPONSOR_PRIVATE_KEY`
+- testnet용 `MINT_CONFIG_OBJECT_ID`
+- 실제 배포 URL이 들어간 `PUBLIC_BASE_URL`, `ALLOWED_ORIGINS`, `VITE_BACKEND_URL`
+
+주의:
+- sponsor wallet private key는 그대로 써도 주소가 동일합니다. 대신 testnet SUI를 다시 받아서 가스 코인을 준비해야 합니다.
+- mainnet의 `MINT_CONFIG_OBJECT_ID`는 testnet에서 절대 재사용할 수 없습니다.
+- 환경변수 변경 뒤 Frontend/Backend 둘 다 재배포해야 합니다.
 
 ## 주의
 

@@ -11,9 +11,11 @@ import App from './App';
 import './styles.css';
 
 const queryClient = new QueryClient();
-const suiNetworkRaw = (import.meta.env.VITE_SUI_NETWORK ?? 'mainnet').toLowerCase();
+const suiNetworkRaw = (import.meta.env.VITE_SUI_NETWORK ?? 'testnet').toLowerCase();
 const suiNetwork =
-  suiNetworkRaw === 'testnet' || suiNetworkRaw === 'devnet' ? suiNetworkRaw : 'mainnet';
+  suiNetworkRaw === 'mainnet' || suiNetworkRaw === 'testnet' || suiNetworkRaw === 'devnet'
+    ? suiNetworkRaw
+    : 'testnet';
 const rpcUrl = import.meta.env.VITE_SUI_RPC_URL
   ?? (suiNetwork === 'mainnet'
     ? 'https://fullnode.mainnet.sui.io:443'

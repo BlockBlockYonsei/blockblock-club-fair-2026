@@ -96,7 +96,7 @@ function networkFromEnv(name: string, fallback: AppConfig['suiNetwork']): AppCon
 export function getConfig(): AppConfig {
   const rateLimitRelaxed = boolFromEnv('RATE_LIMIT_RELAXED', false);
   const publicBaseUrl = optionalTrimmed('PUBLIC_BASE_URL');
-  const suiNetwork = networkFromEnv('SUI_NETWORK', 'mainnet');
+  const suiNetwork = networkFromEnv('SUI_NETWORK', 'testnet');
 
   const supabaseUrl = optionalTrimmed('SUPABASE_URL');
   const supabaseBucketName = optionalTrimmed('SUPABASE_BUCKET_NAME');
