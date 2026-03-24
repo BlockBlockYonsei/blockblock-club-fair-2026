@@ -38,6 +38,14 @@ function required(name: string): string {
   return value;
 }
 
+function requiredHexId(name: string): string {
+  const value = required(name).replace(/\s+/g, '');
+  if (!/^0x[0-9a-fA-F]+$/.test(value)) {
+    throw new Error(`Invalid hex object id env: ${name}`);
+  }
+  return value;
+}
+
 function boolFromEnv(name: string, fallback: boolean): boolean {
   const value = process.env[name]?.trim().toLowerCase();
   if (!value) {
@@ -129,8 +137,8 @@ export function getConfig(): AppConfig {
         : suiNetwork === 'testnet'
           ? 'https://fullnode.testnet.sui.io:443'
           : 'https://fullnode.devnet.sui.io:443'),
-    packageId: required('CONTRACT_PACKAGE_ID'),
-    mintConfigObjectId: required('MINT_CONFIG_OBJECT_ID'),
+    packageId: requiredHexId('CONTRACT_PACKAGE_ID'),
+    mintConfigObjectId: requiredHexId('MINT_CONFIG_OBJECT_ID'),
     sponsorPrivateKey: required('SPONSOR_PRIVATE_KEY'),
     gasBudgetMist: process.env.GAS_BUDGET_MIST ?? '8000000',
     defaultNftName:
